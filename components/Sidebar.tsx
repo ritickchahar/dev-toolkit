@@ -1,9 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
+
+interface Topic {
+    name: string;
+    slug: string;
+}
+
+const CACHE_KEY = 'dev-diary-topics';
+const CACHE_TTL = 60 * 60 * 1000;
+const README_URL = 'https://raw.githubusercontent.com/ritickchahar/dev-diary/main/README.md';
+
+function parseReadme(readme: string): Topic[] {
+    const lines = readme.split('\n').filter((l) => l.trim().startsWith('|'));
+    const dataLines = lines.filter((l) => !l.includes('---')).slice(1);
+    return dataLines.flatMap((line) => {
+        const cols = line.split('|').map((c) => c.trim()).filter(Boolean);
+        if (cols.length < 3) return [];
+        const name = cols[0];
+        const match = /\[.*?\]\((.*?\.md)\)/.exec(cols[2]);
+        if (!match) return [];
+        const slug = match[1].replace(/\.md$/, '');
+        return [{ name, slug }];
+    });
+}
+
+function getFreshCache(): Topic[] | null {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { topics, timestamp } = JSON.parse(raw) as { topics: Topic[]; timestamp: number };
+        return Date.now() - timestamp < CACHE_TTL ? topics : null;
+    } catch { return null; }
+}
+
+function getStaleCache(): Topic[] | null {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        return (JSON.parse(raw) as { topics: Topic[] }).topics ?? null;
+    } catch { return null; }
+}
+
+function setCache(topics: Topic[]) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ topics, timestamp: Date.now() }));
+    } catch { }
+}
 
 const tools = [
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
@@ -15,6 +61,36 @@ const tools = [
 export default function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const [notesOpen, setNotesOpen] = useState(() => pathname.startsWith('/notes/'));
+    const [topics, setTopics] = useState<Topic[]>([]);
+    const [topicsLoading, setTopicsLoading] = useState(true);
+    const [topicsError, setTopicsError] = useState(false);
+
+    useEffect(() => {
+        const fresh = getFreshCache();
+        if (fresh) {
+            setTopics(fresh);
+            setTopicsLoading(false);
+            return;
+        }
+        fetch(README_URL)
+            .then((res) => { if (!res.ok) throw new Error(); return res.text(); })
+            .then((text) => {
+                const parsed = parseReadme(text);
+                setCache(parsed);
+                setTopics(parsed);
+                setTopicsLoading(false);
+            })
+            .catch(() => {
+                const stale = getStaleCache();
+                if (stale) {
+                    setTopics(stale);
+                } else {
+                    setTopicsError(true);
+                }
+                setTopicsLoading(false);
+            });
+    }, []);
 
     return (
         <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
@@ -43,6 +119,39 @@ export default function Sidebar() {
                         {!collapsed && <span>{tool.label}</span>}
                     </Link>
                 ))}
+
+                {!collapsed && (
+                    <div className={styles.notesSectionWrapper}>
+                        <button
+                            className={styles.notesSectionBtn}
+                            onClick={() => setNotesOpen((o) => !o)}
+                        >
+                            <span className={styles.navSection}>NOTES</span>
+                            <span className={styles.notesChevron}>{notesOpen ? '▾' : '▸'}</span>
+                        </button>
+
+                        {notesOpen && (
+                            <div className={styles.topicsList}>
+                                {topicsLoading && (
+                                    <span className={styles.topicsStatus}>Loading...</span>
+                                )}
+                                {topicsError && !topicsLoading && (
+                                    <span className={styles.topicsStatus}>Could not load topics.</span>
+                                )}
+                                {!topicsLoading && topics.map((topic) => (
+                                    <Link
+                                        key={topic.slug}
+                                        href={`/notes/${topic.slug}`}
+                                        className={`${styles.navItem} ${styles.topicItem} ${pathname === `/notes/${topic.slug}` ? styles.navItemActive : ''}`}
+                                    >
+                                        <span className={styles.topicIcon}>–</span>
+                                        <span>{topic.name}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </nav>
 
             <button
