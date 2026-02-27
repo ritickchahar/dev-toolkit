@@ -7,6 +7,7 @@ import { themes, DEFAULT_THEME_ID } from '@/config/themes';
 export const metadata: Metadata = {
   title: 'dev-toolkit',
   description: 'A lightweight, browser-based collection of tools built for developers.',
+  icons: { icon: '/favicon.ico' },
 };
 
 const themesVarsMap = Object.fromEntries(themes.map((t) => [t.id, t.vars]));
