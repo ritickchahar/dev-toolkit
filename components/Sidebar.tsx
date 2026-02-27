@@ -7,6 +7,7 @@ import styles from './Sidebar.module.css';
 const tools = [
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
     { label: 'Diff', href: '/diff', icon: '⇄' },
+    { label: 'JSON', href: '/json-formatter', icon: '{ }' },
 ];
 
 export default function Sidebar() {
