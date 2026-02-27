@@ -19,6 +19,7 @@ const tools = [
     { label: 'Markdown', href: '/markdown-preview', icon: '¶' },
     { label: 'CSV', href: '/csv-viewer', icon: '▦' },
     { label: 'Notepad', href: '/notes-pad', icon: '≡' },
+    { label: 'Pomodoro', href: '/pomodoro', icon: '◔' },
 ];
 
 function getCachedTopics(): Topic[] {

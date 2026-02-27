@@ -1,0 +1,562 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+    background: var(--bg-titlebar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.toolbarLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toolbarActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gearBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 4px;
+    transition: color 0.12s;
+}
+
+.gearBtn:hover {
+    color: var(--text-primary);
+}
+
+/* ── Settings panel ── */
+.settingsPanel {
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.settingsRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.settingsInput {
+    width: 48px;
+    padding: 3px 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    outline: none;
+}
+
+.settingsInput:focus {
+    border-color: var(--accent);
+}
+
+.toggleBtn {
+    padding: 3px 10px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.toggleOn {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* ── Content ── */
+.content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+/* ── Setup ── */
+.setupBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    max-width: 460px;
+    width: 100%;
+}
+
+.setupQ {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin: 0;
+    text-align: center;
+}
+
+.setupQ2 {
+    margin-top: 24px;
+}
+
+.presetRow {
+    display: flex;
+    gap: 8px;
+}
+
+.presetBtn {
+    padding: 10px 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.presetBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.presetActive {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.customInput {
+    width: 100px;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+}
+
+.customInput:focus {
+    border-color: var(--accent);
+}
+
+.postureRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.postureBtn {
+    padding: 12px 20px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.postureBtn:hover {
+    background: var(--bg-hover);
+}
+
+.postureBtnYes:hover {
+    border-color: #4ec96b;
+    color: #4ec96b;
+}
+
+.postureBtnNo:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+/* ── Center box (posture steps, complete) ── */
+.centerBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loadingText {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.loadingSub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: 0;
+}
+
+.errorText {
+    font-size: 13px;
+    color: #e06c75;
+    margin: 0;
+}
+
+.btnRow {
+    display: flex;
+    gap: 8px;
+}
+
+.actionBtn {
+    padding: 6px 14px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.actionBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.actionBtnDanger:hover {
+    color: #e06c75;
+    border-color: #e06c75;
+}
+
+.accentBtn {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.accentBtn:hover {
+    background: var(--accent-hover);
+}
+
+/* ── Webcam / training ── */
+.videoWrap {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    width: 320px;
+    height: 240px;
+    background: #000;
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.captureBtn {
+    padding: 10px 24px;
+    background: #2e8b57;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.captureBtn:hover {
+    background: #267a4c;
+}
+
+.sampleInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.sampleBar {
+    width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.sampleFill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.2s;
+}
+
+.sampleHint {
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+.captureBtnRed {
+    padding: 10px 24px;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.captureBtnRed:hover {
+    background: #a93226;
+}
+
+.sampleBarRed {
+    width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.sampleFillRed {
+    height: 100%;
+    background: #e06c75;
+    transition: width 0.2s;
+}
+
+/* ── Timer ── */
+.timerBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+.hiddenVideo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.countdown {
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.durLabel {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0;
+}
+
+.breakLabel {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 600;
+}
+
+.progressBar {
+    width: 280px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.3s linear;
+}
+
+.timerBtns {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── Posture pill ── */
+.posturePill {
+    position: absolute;
+    top: -8px;
+    right: -80px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.pillGreen {
+    background: rgba(78, 201, 107, 0.12);
+    color: #4ec96b;
+    border-color: rgba(78, 201, 107, 0.3);
+}
+
+.pillRed {
+    background: rgba(224, 108, 117, 0.12);
+    color: #e06c75;
+    border-color: rgba(224, 108, 117, 0.3);
+}
+
+.pillGrey {
+    background: var(--bg-secondary);
+    color: var(--text-dim);
+    border-color: var(--border);
+}
+
+.pillDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ── Complete ── */
+.completeTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.completeSub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0;
+}
+
+.scoreBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.scoreLabel {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.scoreValue {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.1;
+}
+
+.scoreHint {
+    font-size: 10px;
+    color: var(--text-dim);
+}
+
+/* ── Status bar ── */
+.statusBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0 12px;
+    background: var(--bg-statusbar);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.statusItem {
+    white-space: nowrap;
+}
+
+.statusDivider {
+    opacity: 0.4;
+}
+
+.statusGreen {
+    color: #4ec96b;
+}
+
+.statusRed {
+    color: #e06c75;
+}
