@@ -10,34 +10,7 @@ import { useTheme } from './ThemeProvider';
 import ThemeSelector from './ThemeSelector';
 import styles from './MarkdownPreview.module.css';
 
-const DEFAULT_MD = `# Hello, Markdown Preview!
 
-Welcome to dev-toolkit's **Markdown Preview**. Edit on the left, see the result on the right.
-
-## Features
-
-- *Italic* and **bold** text
-- \`inline code\` and fenced code blocks
-- Tables, blockquotes, and horizontal rules
-- Links and images
-
-## Example Table
-
-| Name  | Role     | Team     |
-|-------|----------|----------|
-| Alice | Engineer | Platform |
-| Bob   | Designer | Product  |
-| Carol | Manager  | Growth   |
-
-## Code Block
-
-\`\`\`javascript
-const greet = (name) => \`Hello, \${name}!\`;
-console.log(greet('world'));
-\`\`\`
-
-> **Tip:** Use the quick-insert buttons above the editor to insert common markdown syntax at the cursor position.
-`;
 
 const INSERTS = [
     { label: 'B', title: 'Bold', before: '**', after: '**' },
@@ -50,8 +23,8 @@ const INSERTS = [
 
 export default function MarkdownPreview() {
     const { theme } = useTheme();
-    const [markdown, setMarkdown] = useState(DEFAULT_MD);
-    const [displayed, setDisplayed] = useState(DEFAULT_MD);
+    const [markdown, setMarkdown] = useState('');
+    const [displayed, setDisplayed] = useState('');
     const [fullscreen, setFullscreen] = useState(false);
     const [copiedMd, setCopiedMd] = useState(false);
     const [copiedHtml, setCopiedHtml] = useState(false);
