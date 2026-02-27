@@ -1,46 +1,51 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { themes, DEFAULT_THEME_ID, getTheme, type Theme } from '@/config/themes';
 
-type Theme = 'dark' | 'light';
-
-interface ThemeContextValue {
+interface ThemeContextType {
     theme: Theme;
-    toggleTheme: () => void;
+    setTheme: (id: string) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
-    theme: 'dark',
-    toggleTheme: () => { },
+const ThemeContext = createContext<ThemeContextType>({
+    theme: getTheme(DEFAULT_THEME_ID),
+    setTheme: () => { },
 });
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<Theme>('dark');
+export function useTheme() {
+    return useContext(ThemeContext);
+}
+
+function applyTheme(theme: Theme) {
+    const root = document.documentElement;
+    for (const [key, value] of Object.entries(theme.vars)) {
+        root.style.setProperty(key, value);
+    }
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const [theme, setThemeState] = useState<Theme>(() => getTheme(DEFAULT_THEME_ID));
 
     useEffect(() => {
-        const stored = localStorage.getItem('dev-toolkit-theme') as Theme | null;
-        if (stored === 'light' || stored === 'dark') {
-            setTheme(stored);
-            document.documentElement.setAttribute('data-theme', stored);
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+        const stored = localStorage.getItem('dev-toolkit-theme');
+        const t = getTheme(stored ?? DEFAULT_THEME_ID);
+        setThemeState(t);
+        applyTheme(t);
     }, []);
 
-    function toggleTheme() {
-        const next = theme === 'dark' ? 'light' : 'dark';
-        setTheme(next);
-        localStorage.setItem('dev-toolkit-theme', next);
-        document.documentElement.setAttribute('data-theme', next);
+    function setTheme(id: string) {
+        const t = getTheme(id);
+        setThemeState(t);
+        applyTheme(t);
+        localStorage.setItem('dev-toolkit-theme', id);
     }
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme, setTheme }}>
             {children}
         </ThemeContext.Provider>
     );
 }
 
-export function useTheme() {
-    return useContext(ThemeContext);
-}
+export { themes };

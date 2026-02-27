@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { diff_match_patch, DIFF_DELETE, DIFF_INSERT, DIFF_EQUAL, type Diff } from 'diff-match-patch';
-import { useTheme } from './ThemeProvider';
+import ThemeSelector from './ThemeSelector';
 import styles from './DiffChecker.module.css';
 
 interface LineInfo {
@@ -98,7 +98,6 @@ function computeLineDiff(left: string, right: string): { leftLines: LineInfo[]; 
 }
 
 export default function DiffChecker() {
-    const { theme, toggleTheme } = useTheme();
     const [leftText, setLeftText] = useState('');
     const [rightText, setRightText] = useState('');
     const [leftLines, setLeftLines] = useState<LineInfo[]>([]);
@@ -237,10 +236,7 @@ export default function DiffChecker() {
                     <button id="diff-clear" className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={handleClear}>
                         ✕ Clear Both
                     </button>
-                    <button id="diff-theme-toggle" className={styles.themeToggle} onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-                        {theme === 'dark' ? '○' : '●'}
-                        <span className={styles.themeLabel}>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-                    </button>
+                    <ThemeSelector />
                 </div>
             </div>
 

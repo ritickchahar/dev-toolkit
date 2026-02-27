@@ -43,11 +43,11 @@ interface NoteViewerProps {
 
 interface CodeBlockProps {
     language: string;
-    theme: string;
+    isDark: boolean;
     children: string;
 }
 
-function CodeBlock({ language, theme: activeTheme, children }: CodeBlockProps) {
+function CodeBlock({ language, isDark, children }: CodeBlockProps) {
     const [copied, setCopied] = useState(false);
 
     async function handleCopy() {
@@ -63,7 +63,7 @@ function CodeBlock({ language, theme: activeTheme, children }: CodeBlockProps) {
             </button>
             <SyntaxHighlighter
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                style={(activeTheme === 'dark' ? vscDarkPlus : vs) as any}
+                style={(isDark ? vscDarkPlus : vs) as any}
                 language={language}
                 PreTag="div"
                 customStyle={{ borderRadius: '4px', margin: '0', fontSize: '13px', lineHeight: '1.6' }}
@@ -133,7 +133,7 @@ export default function NoteViewer({ topic }: NoteViewerProps) {
                                     const match = /language-(\w+)/.exec(className ?? '');
                                     if (match) {
                                         return (
-                                            <CodeBlock language={match[1]} theme={theme}>
+                                            <CodeBlock language={match[1]} isDark={theme.isDark}>
                                                 {String(children).replace(/\n$/, '')}
                                             </CodeBlock>
                                         );

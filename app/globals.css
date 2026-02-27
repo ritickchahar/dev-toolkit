@@ -17,33 +17,10 @@
   --line-number: #5a5a5a;
   --cursor: #aeafad;
   --selection: #264f78;
-  --accent: #007acc;
-  --accent-hover: #1a8ad4;
+  --accent: #4fc1ff;
+  --accent-hover: #3aabea;
   --scrollbar: #424242;
   --scrollbar-hover: #555555;
-}
-
-[data-theme='light'] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f3f3f3;
-  --bg-sidebar: #e8e8e8;
-  --bg-titlebar: #dddddd;
-  --bg-statusbar: #007acc;
-  --bg-hover: #e8e8e8;
-  --bg-active: #d6d6d6;
-  --border: #cccccc;
-  --text-primary: #1e1e1e;
-  --text-secondary: #6e6e6e;
-  --text-dim: #9b9b9b;
-  --text-sidebar: #333333;
-  --text-active: #000000;
-  --line-number: #999999;
-  --cursor: #333333;
-  --selection: #add6ff;
-  --accent: #007acc;
-  --accent-hover: #005a9e;
-  --scrollbar: #c1c1c1;
-  --scrollbar-hover: #a8a8a8;
 }
 
 *,

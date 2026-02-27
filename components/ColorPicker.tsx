@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useTheme } from './ThemeProvider';
+import ThemeSelector from './ThemeSelector';
 import styles from './ColorPicker.module.css';
 
 const DEFAULT_COLOR = '#3b82f6';
@@ -58,7 +58,6 @@ function isLight(r: number, g: number, b: number): boolean {
 }
 
 export default function ColorPicker() {
-    const { theme, toggleTheme } = useTheme();
     const [color, setColor] = useState(DEFAULT_COLOR);
     const [hexInput, setHexInput] = useState(DEFAULT_COLOR);
     const [isDragging, setIsDragging] = useState(false);
@@ -186,15 +185,7 @@ export default function ColorPicker() {
             <div className={styles.toolbar}>
                 <span className={styles.toolbarLabel}>Color Picker</span>
                 <div className={styles.toolbarActions}>
-                    <button
-                        id="color-theme-toggle"
-                        className={styles.themeToggle}
-                        onClick={toggleTheme}
-                        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                    >
-                        {theme === 'dark' ? '○' : '●'}
-                        <span className={styles.themeLabel}>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-                    </button>
+                    <ThemeSelector />
                 </div>
             </div>
 

@@ -2,20 +2,21 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import Sidebar from '@/components/Sidebar';
+import { themes, DEFAULT_THEME_ID } from '@/config/themes';
 
 export const metadata: Metadata = {
   title: 'dev-toolkit',
   description: 'A lightweight, browser-based collection of tools built for developers.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+const themesVarsMap = Object.fromEntries(themes.map((t) => [t.id, t.vars]));
+const initScript = `(function(){var m=${JSON.stringify(themesVarsMap)};var id=localStorage.getItem('dev-toolkit-theme')||'${DEFAULT_THEME_ID}';var v=m[id]||m['${DEFAULT_THEME_ID}'];for(var k in v){document.documentElement.style.setProperty(k,v[k])}})()`;
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: initScript }} />
         <ThemeProvider>
           <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             <Sidebar />

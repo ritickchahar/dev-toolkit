@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useTheme } from './ThemeProvider';
+import ThemeSelector from './ThemeSelector';
 import styles from './JsonFormatter.module.css';
 
 function formatJson(input: string, minify: boolean): { output: string; error: string } {
@@ -16,7 +16,6 @@ function formatJson(input: string, minify: boolean): { output: string; error: st
 }
 
 export default function JsonFormatter() {
-    const { theme, toggleTheme } = useTheme();
     const [input, setInput] = useState('');
     const [output, setOutput] = useState('');
     const [error, setError] = useState('');
@@ -107,15 +106,7 @@ export default function JsonFormatter() {
                     >
                         ✕ Clear
                     </button>
-                    <button
-                        id="json-theme-toggle"
-                        className={styles.themeToggle}
-                        onClick={toggleTheme}
-                        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                    >
-                        {theme === 'dark' ? '○' : '●'}
-                        <span className={styles.themeLabel}>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-                    </button>
+                    <ThemeSelector />
                 </div>
             </div>
 
