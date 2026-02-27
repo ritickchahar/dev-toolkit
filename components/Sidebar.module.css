@@ -1,0 +1,171 @@
+.sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.sidebarCollapsed {
+    width: 48px;
+    min-width: 48px;
+}
+
+.logo {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.logoText {
+    color: var(--text-primary);
+}
+
+.logoDot {
+    color: var(--text-dim);
+}
+
+.logoAccent {
+    color: var(--accent);
+}
+
+.nav {
+    flex: 1;
+    padding: 8px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.navSection {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.1s;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.navItemCollapsed {
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.navItem:hover {
+    background: var(--bg-hover);
+}
+
+.navItemActive {
+    background: var(--bg-active);
+    color: var(--text-active);
+}
+
+.navItemActive:hover {
+    background: var(--bg-active);
+}
+
+.navIcon {
+    font-size: 14px;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.notesSectionWrapper {
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.notesSectionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding-right: 14px;
+}
+
+.notesSectionBtn:hover .navSection {
+    color: var(--text-secondary);
+}
+
+.notesChevron {
+    font-size: 9px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.topicsList {
+    padding-bottom: 4px;
+}
+
+.topicItem {
+    padding-left: 24px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.topicItem:hover {
+    color: var(--text-primary);
+}
+
+.topicIcon {
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.topicsStatus {
+    display: block;
+    padding: 4px 24px 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+}
+
+.toggleBtn {
+    height: 36px;
+    min-height: 36px;
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.toggleBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}

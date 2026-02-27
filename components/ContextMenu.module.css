@@ -1,0 +1,97 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+}
+
+.menu {
+    position: fixed;
+    z-index: 9999;
+    width: 200px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 0;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    font-family: 'JetBrains Mono', monospace;
+    animation: pop 0.1s ease;
+}
+
+@keyframes pop {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sectionLabel {
+    padding: 6px 16px 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.sectionLabelSpaced {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.1s, color 0.1s;
+    cursor: pointer;
+}
+
+.item:hover {
+    background: var(--bg-hover);
+    color: var(--text-active);
+}
+
+.icon {
+    font-size: 14px;
+    opacity: 0.7;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+.noteIcon {
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+.notesList {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.notesList::-webkit-scrollbar {
+    width: 3px;
+}
+
+.notesList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.notesList::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 2px;
+}
