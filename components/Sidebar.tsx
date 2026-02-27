@@ -61,6 +61,7 @@ const tools = [
     { label: 'Download', href: '/download', icon: '⬇' },
     { label: 'JWT', href: '/jwt-decoder', icon: '' },
     { label: 'Markdown', href: '/markdown-preview', icon: 'M↓' },
+    { label: 'CSV', href: '/csv-viewer', icon: '▦' },
 ];
 
 export default function Sidebar() {

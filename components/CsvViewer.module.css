@@ -1,0 +1,307 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+    background: var(--bg-titlebar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.toolbarLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toolbarActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Shared button ── */
+.actionBtn {
+    padding: 3px 8px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+
+.actionBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.actionBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.actionBtnDanger:hover:not(:disabled) {
+    color: #e06c75;
+    border-color: #e06c75;
+}
+
+/* ── Input controls row ── */
+.inputControls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.delimSelect {
+    padding: 3px 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    outline: none;
+}
+
+.delimSelect:focus {
+    border-color: var(--accent);
+}
+
+/* ── Input textarea ── */
+.inputArea {
+    flex-shrink: 0;
+    height: 120px;
+    border-bottom: 1px solid var(--border);
+}
+
+.textarea {
+    width: 100%;
+    height: 100%;
+    resize: none;
+    background: var(--bg-primary);
+    border: none;
+    outline: none;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    caret-color: var(--cursor);
+    box-sizing: border-box;
+}
+
+.textarea::placeholder {
+    color: var(--text-dim);
+}
+
+/* ── Table section ── */
+.tableSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tableControls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.tableControlsRight {
+    display: flex;
+    gap: 6px;
+}
+
+.searchInput {
+    width: 220px;
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+    border-color: var(--accent);
+}
+
+.searchInput::placeholder {
+    color: var(--text-dim);
+}
+
+/* ── Table ── */
+.tableWrap {
+    flex: 1;
+    overflow: auto;
+}
+
+.tableWrap::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tableWrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tableWrap::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 3px;
+}
+
+.tableWrap::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-hover);
+}
+
+.placeholder {
+    padding: 40px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-titlebar);
+    border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 6px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    transition: background 0.1s;
+}
+
+.th:hover {
+    background: var(--bg-hover);
+}
+
+.rowNumHeader {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg-titlebar);
+    border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 6px 8px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-dim);
+    width: 36px;
+    min-width: 36px;
+    font-size: 10px;
+}
+
+.sortArrow {
+    font-size: 9px;
+    color: var(--accent);
+}
+
+.td {
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 5px 12px;
+    white-space: nowrap;
+    color: var(--text-primary);
+    transition: background 0.08s;
+}
+
+.rowNum {
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 5px 8px;
+    text-align: right;
+    color: var(--text-dim);
+    font-size: 10px;
+    background: var(--bg-secondary);
+    width: 36px;
+    min-width: 36px;
+}
+
+.rowEven td {
+    background: var(--bg-primary);
+}
+
+.rowOdd td {
+    background: var(--bg-secondary);
+}
+
+.rowEven .rowNum {
+    background: var(--bg-secondary);
+}
+
+.rowOdd .rowNum {
+    background: var(--bg-secondary);
+}
+
+.colHighlight {
+    background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+}
+
+/* ── Status bar ── */
+.statusBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0 12px;
+    background: var(--bg-statusbar);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.statusItem {
+    white-space: nowrap;
+}
+
+.statusDivider {
+    opacity: 0.4;
+}
+
+.statusWarning {
+    color: #e5c07b;
+}
