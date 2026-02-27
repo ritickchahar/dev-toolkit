@@ -1,0 +1,77 @@
+.sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.logo {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    user-select: none;
+}
+
+.logoText {
+    color: var(--text-primary);
+}
+
+.logoDot {
+    color: var(--text-dim);
+}
+
+.logoAccent {
+    color: var(--accent);
+}
+
+.nav {
+    flex: 1;
+    padding: 8px 0;
+    overflow-y: auto;
+}
+
+.navSection {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.1s;
+    cursor: pointer;
+}
+
+.navItem:hover {
+    background: var(--bg-hover);
+}
+
+.navItemActive {
+    background: var(--bg-active);
+    color: var(--text-active);
+}
+
+.navItemActive:hover {
+    background: var(--bg-active);
+}
+
+.navIcon {
+    font-size: 14px;
+    opacity: 0.7;
+}
