@@ -56,12 +56,13 @@ function setCache(topics: Topic[]) {
 const tools = [
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
     { label: 'Diff', href: '/diff', icon: '⇄' },
-    { label: 'JSON', href: '/json-formatter', icon: '{ }' },
+    { label: 'JSON', href: '/json-formatter', icon: '{}' },
     { label: 'Color', href: '/color-picker', icon: '◉' },
-    { label: 'Download', href: '/download', icon: '⬇' },
-    { label: 'JWT', href: '/jwt-decoder', icon: '' },
-    { label: 'Markdown', href: '/markdown-preview', icon: 'M↓' },
+    { label: 'Download', href: '/download', icon: '↓' },
+    { label: 'JWT', href: '/jwt-decoder', icon: '⚿' },
+    { label: 'Markdown', href: '/markdown-preview', icon: '¶' },
     { label: 'CSV', href: '/csv-viewer', icon: '▦' },
+    { label: 'Notepad', href: '/notes-pad', icon: '≡' },
 ];
 
 export default function Sidebar() {
