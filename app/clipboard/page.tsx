@@ -3,7 +3,7 @@ import Titlebar from '@/components/Titlebar';
 import ClipboardEditor from '@/components/ClipboardEditor';
 
 export const metadata: Metadata = {
-    title: 'Clipboard — dev-toolkit',
+    title: 'dev-toolkit — Clipboard',
     description: 'Paste and inspect text or code with line numbers and character counts.',
 };
 
