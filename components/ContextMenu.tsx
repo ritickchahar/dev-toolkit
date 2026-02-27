@@ -15,6 +15,8 @@ const tools = [
     { label: 'JSON', href: '/json-formatter', icon: '{ }' },
     { label: 'Color', href: '/color-picker', icon: '◉' },
     { label: 'Download', href: '/download', icon: '⬇' },
+    { label: 'JWT', href: '/jwt-decoder', icon: '{}' },
+    { label: 'Markdown', href: '/markdown-preview', icon: 'M↓' },
 ];
 
 function getCachedTopics(): Topic[] {
