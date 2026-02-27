@@ -7,6 +7,12 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.sidebarCollapsed {
+    width: 48px;
+    min-width: 48px;
 }
 
 .logo {
@@ -17,6 +23,8 @@
     font-weight: 600;
     letter-spacing: -0.5px;
     user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .logoText {
@@ -35,6 +43,7 @@
     flex: 1;
     padding: 8px 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .navSection {
@@ -44,6 +53,7 @@
     letter-spacing: 1px;
     color: var(--text-dim);
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .navItem {
@@ -56,6 +66,13 @@
     font-size: 13px;
     transition: background 0.1s;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.navItemCollapsed {
+    justify-content: center;
+    padding: 8px 0;
 }
 
 .navItem:hover {
@@ -74,4 +91,27 @@
 .navIcon {
     font-size: 14px;
     opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.toggleBtn {
+    height: 36px;
+    min-height: 36px;
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.toggleBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
 }
