@@ -1,0 +1,270 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.toolbar {
+    height: 36px;
+    min-height: 36px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.toolbarLabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.toolbarActions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.themeToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.themeToggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.themeLabel {
+    font-size: 11px;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 32px 24px;
+}
+
+.inner {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.preview {
+    height: 116px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.08s;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.previewText {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    transition: color 0.08s;
+    user-select: none;
+}
+
+.inputSection {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.colorInput {
+    width: 46px;
+    height: 36px;
+    padding: 2px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+}
+
+.colorInput:hover {
+    border-color: var(--text-secondary);
+}
+
+.hexInput {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 7px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    height: 36px;
+}
+
+.hexInput:focus {
+    border-color: var(--accent);
+}
+
+.hexInput::placeholder {
+    color: var(--text-dim);
+}
+
+.dropZone {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 22px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-secondary);
+}
+
+.dropZone:hover {
+    border-color: var(--text-secondary);
+    background: var(--bg-hover);
+}
+
+.dropZoneDragging {
+    border-color: var(--accent) !important;
+    background: rgba(0, 122, 204, 0.06) !important;
+}
+
+.dropZoneIcon {
+    font-size: 20px;
+    color: var(--text-dim);
+    line-height: 1;
+}
+
+.dropZoneText {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.dropZoneHint {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+}
+
+.outputs {
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.outputRow {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+}
+
+.outputRow:last-child {
+    border-bottom: none;
+}
+
+.outputRow:hover {
+    background: var(--bg-hover);
+}
+
+.outputLabel {
+    width: 34px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+}
+
+.outputValue {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.copyBtn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    width: 26px;
+    height: 22px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.copyBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.footer {
+    display: flex;
+    gap: 8px;
+}
+
+.actionBtn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.actionBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.actionBtnDanger:hover {
+    border-color: #f14c4c;
+    color: #f14c4c;
+    background: rgba(241, 76, 76, 0.08);
+}

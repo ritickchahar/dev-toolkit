@@ -8,6 +8,7 @@ const tools = [
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
     { label: 'Diff', href: '/diff', icon: '⇄' },
     { label: 'JSON', href: '/json-formatter', icon: '{ }' },
+    { label: 'Color', href: '/color-picker', icon: '◉' },
 ];
 
 export default function Sidebar() {
