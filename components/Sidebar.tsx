@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from './ThemeProvider';
+import { themes } from '@/config/themes';
 import styles from './Sidebar.module.css';
 
 interface Topic {
@@ -60,11 +62,18 @@ const tools = [
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const { theme, setTheme } = useTheme();
     const [collapsed, setCollapsed] = useState(false);
     const [notesOpen, setNotesOpen] = useState(() => pathname.startsWith('/notes/'));
     const [topics, setTopics] = useState<Topic[]>([]);
     const [topicsLoading, setTopicsLoading] = useState(true);
     const [topicsError, setTopicsError] = useState(false);
+
+    function cycleTheme() {
+        const idx = themes.findIndex((t) => t.id === theme.id);
+        const next = themes[(idx + 1) % themes.length];
+        setTheme(next.id);
+    }
 
     useEffect(() => {
         const fresh = getFreshCache();
@@ -94,7 +103,7 @@ export default function Sidebar() {
 
     return (
         <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
-            <div className={styles.logo}>
+            <div className={styles.logo} onClick={cycleTheme} title="Click to cycle theme" style={{ cursor: 'pointer' }}>
                 {collapsed ? (
                     <span className={styles.logoAccent}>d</span>
                 ) : (
