@@ -105,7 +105,10 @@ export default function Sidebar() {
         <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
             <div className={styles.logo} onClick={cycleTheme} title="Click to cycle theme" style={{ cursor: 'pointer' }}>
                 {collapsed ? (
-                    <span className={styles.logoAccent}>d</span>
+                    <>
+                        <span className={styles.logoText}>d</span>
+                        <span className={styles.logoAccent}>t</span>
+                    </>
                 ) : (
                     <>
                         <span className={styles.logoText}>dev</span>
