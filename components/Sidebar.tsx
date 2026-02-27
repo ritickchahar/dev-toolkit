@@ -6,6 +6,7 @@ import styles from './Sidebar.module.css';
 
 const tools = [
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
+    { label: 'Diff', href: '/diff', icon: '⇄' },
 ];
 
 export default function Sidebar() {
