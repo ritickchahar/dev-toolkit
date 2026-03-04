@@ -2,96 +2,117 @@
     position: fixed;
     inset: 0;
     z-index: 9998;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
 }
 
-.menu {
+.wheelMenu {
     position: fixed;
     z-index: 9999;
-    width: 200px;
-    background: var(--bg-sidebar);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 6px 0;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    width: 0;
+    height: 0;
     font-family: 'JetBrains Mono', monospace;
-    animation: pop 0.1s ease;
+    animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes pop {
     from {
         opacity: 0;
-        transform: translateY(-4px);
+        transform: scale(0.6);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
     }
 }
 
-.sectionLabel {
-    padding: 6px 16px 3px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    color: var(--text-dim);
+.wheelBackground {
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    left: 0;
+    top: 0;
+    margin-left: -180px;
+    margin-top: -180px;
+    background: color-mix(in srgb, var(--bg-primary) 20%, transparent);
+    backdrop-filter: blur(24px);
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.wheelCenter {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    left: 0;
+    top: 0;
+    margin-left: -50px;
+    margin-top: -50px;
+    background: color-mix(in srgb, var(--bg-secondary) 30%, transparent);
+    backdrop-filter: blur(24px);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-active);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.wheelCenter span {
+    padding: 10px;
+    word-break: break-word;
     text-transform: uppercase;
-    margin: 0;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.sectionLabelSpaced {
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
+.wheelItem {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    margin-left: -25px;
+    margin-top: -25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-sidebar) 30%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    border-radius: 50%;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1;
 }
 
-.item {
+.wheelItem:hover,
+.activeItem {
+    background: color-mix(in srgb, var(--bg-active) 60%, transparent);
+    color: var(--text-active);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+    z-index: 3;
+    transform: scale(1.35);
+}
+
+.wheelIcon {
+    position: relative;
+    font-size: 22px;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    color: var(--text-sidebar);
-    text-decoration: none;
-    font-size: 13px;
-    transition: background 0.1s, color 0.1s;
-    cursor: pointer;
-}
-
-.item:hover {
-    background: var(--bg-hover);
-    color: var(--text-active);
-}
-
-.icon {
-    font-size: 14px;
-    opacity: 0.7;
-    flex-shrink: 0;
-    width: 16px;
-    text-align: center;
-}
-
-.noteIcon {
-    font-size: 11px;
-    color: var(--text-dim);
-    flex-shrink: 0;
-    width: 16px;
-    text-align: center;
-}
-
-.notesList {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.notesList::-webkit-scrollbar {
-    width: 3px;
-}
-
-.notesList::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.notesList::-webkit-scrollbar-thumb {
-    background: var(--scrollbar);
-    border-radius: 2px;
+    justify-content: center;
 }
