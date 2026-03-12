@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import ThemeSelector from './ThemeSelector';
-import JsonTreeView, { DiffStatus } from './JsonTreeView';
+import JsonTreeView from './JsonTreeView';
 import styles from './JsonFormatter.module.css';
 
 type ViewMode = 'tree' | 'text';
@@ -40,14 +40,6 @@ function tryParse(raw: string): { parsed: unknown; error: string; decodeInfo: st
     }
 }
 
-function repairJson(input: string): string {
-    let s = input;
-    s = s.replace(/\/\/[^\n]*/g, '');
-    s = s.replace(/\/\*[\s\S]*?\*\//g, '');
-    s = s.replace(/,(\s*[}\]])/g, '$1');
-    return s;
-}
-
 function computeStats(data: unknown) {
     let keys = 0, strings = 0, numbers = 0, booleans = 0, nulls = 0, arrays = 0, objects = 0, maxDepth = 0;
     function walk(val: unknown, depth: number) {
@@ -72,49 +64,13 @@ function computeStats(data: unknown) {
     return { keys, strings, numbers, booleans, nulls, arrays, objects, maxDepth };
 }
 
-function computeDiff(a: unknown, b: unknown): Map<string, DiffStatus> {
-    const result = new Map<string, DiffStatus>();
-    function walk(av: unknown, bv: unknown, path: string) {
-        if (JSON.stringify(av) === JSON.stringify(bv)) return;
-        if (av === undefined) { result.set(path, 'added'); return; }
-        if (bv === undefined) { result.set(path, 'removed'); return; }
-        const aIsArr = Array.isArray(av);
-        const bIsArr = Array.isArray(bv);
-        const aType = aIsArr ? 'array' : typeof av;
-        const bType = bIsArr ? 'array' : typeof bv;
-        if (aType !== bType || av === null || bv === null) {
-            result.set(path, 'changed');
-            return;
-        }
-        if (aIsArr && bIsArr) {
-            const len = Math.max((av as unknown[]).length, (bv as unknown[]).length);
-            for (let i = 0; i < len; i++) {
-                walk((av as unknown[])[i], (bv as unknown[])[i], `${path}[${i}]`);
-            }
-        } else if (aType === 'object') {
-            const aObj = av as Record<string, unknown>;
-            const bObj = bv as Record<string, unknown>;
-            const allKeys = new Set([...Object.keys(aObj), ...Object.keys(bObj)]);
-            for (const key of allKeys) {
-                walk(aObj[key], bObj[key], `${path}.${key}`);
-            }
-        } else {
-            result.set(path, 'changed');
-        }
-    }
-    walk(a, b, '$');
-    return result;
-}
-
 function syncGutter(textarea: HTMLTextAreaElement | null, gutter: HTMLDivElement | null) {
     if (textarea && gutter) gutter.scrollTop = textarea.scrollTop;
 }
 
 export default function JsonFormatter() {
     const [input, setInput] = useState('');
-    const [input2, setInput2] = useState('');
     const [viewMode, setViewMode] = useState<ViewMode>('tree');
-    const [diffMode, setDiffMode] = useState(false);
     const [minify, setMinify] = useState(false);
     const [sortKeys, setSortKeys] = useState(false);
     const [indentSize, setIndentSize] = useState<IndentSize>(2);
@@ -126,12 +82,9 @@ export default function JsonFormatter() {
     const [copied, setCopied] = useState(false);
 
     const [parseResult, setParseResult] = useState<{ parsed: unknown; error: string; decodeInfo: string | null }>({ parsed: null, error: '', decodeInfo: null });
-    const [parseResult2, setParseResult2] = useState<{ parsed: unknown; error: string; decodeInfo: string | null }>({ parsed: null, error: '', decodeInfo: null });
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    const input2Ref = useRef<HTMLTextAreaElement>(null);
     const inputGutterRef = useRef<HTMLDivElement>(null);
-    const input2GutterRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,10 +93,9 @@ export default function JsonFormatter() {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
             setParseResult(tryParse(input));
-            if (diffMode) setParseResult2(tryParse(input2));
         }, 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    }, [input, input2, diffMode]);
+    }, [input]);
 
     useEffect(() => {
         if (showSearch) searchRef.current?.focus();
@@ -170,10 +122,6 @@ export default function JsonFormatter() {
         ? (minify ? JSON.stringify(parsed) : JSON.stringify(parsed, null, getIndentStr(indentSize)))
         : '';
 
-    const diffMap = diffMode && parsed !== null && parseResult2.parsed !== null
-        ? computeDiff(parsed, parseResult2.parsed)
-        : undefined;
-
     const stats = parsed !== null ? computeStats(parsed) : null;
 
     function handleExpandAll() {
@@ -196,13 +144,8 @@ export default function JsonFormatter() {
 
     function handleClear() {
         setInput('');
-        setInput2('');
         setSearchQuery('');
         inputRef.current?.focus();
-    }
-
-    function handleRepair() {
-        setInput(repairJson(input));
     }
 
     function handleDownload() {
@@ -242,7 +185,6 @@ export default function JsonFormatter() {
     const isEmpty = input.trim() === '';
     const isValid = !error && !isEmpty;
     const inputLineCount = input === '' ? 1 : input.split('\n').length;
-    const input2LineCount = input2 === '' ? 1 : input2.split('\n').length;
     const inputBytes = new TextEncoder().encode(input).length;
     const inputSize = inputBytes < 1024 ? `${inputBytes} B` : `${(inputBytes / 1024).toFixed(1)} KB`;
 
@@ -315,16 +257,7 @@ export default function JsonFormatter() {
                     >
                         ⌕ Search
                     </button>
-                    <button
-                        className={`${styles.actionBtn} ${diffMode ? styles.actionBtnActive : ''}`}
-                        onClick={() => setDiffMode(d => !d)}
-                    >
-                        ⇄ Diff
-                    </button>
                     <div className={styles.toolbarSep} />
-                    <button className={styles.actionBtn} onClick={handleRepair} disabled={!input || isValid}>
-                        ⚙ Repair
-                    </button>
                     <button className={styles.actionBtn} onClick={handleDownload} disabled={!parsed}>
                         ↓ Save
                     </button>
@@ -402,31 +335,6 @@ export default function JsonFormatter() {
                             placeholder="Paste or type JSON here... (or drag & drop a file)"
                         />
                     </div>
-                    {diffMode && (
-                        <>
-                            <div className={styles.diffDividerH}>Compare With</div>
-                            <div className={styles.editorArea}>
-                                <div ref={input2GutterRef} className={styles.gutter}>
-                                    {Array.from({ length: input2LineCount }, (_, i) => (
-                                        <div key={i} className={styles.lineNumber}>{i + 1}</div>
-                                    ))}
-                                </div>
-                                <textarea
-                                    ref={input2Ref}
-                                    className={styles.textarea}
-                                    value={input2}
-                                    onChange={e => setInput2(e.target.value)}
-                                    onScroll={() => syncGutter(input2Ref.current, input2GutterRef.current)}
-                                    spellCheck={false}
-                                    autoCorrect="off"
-                                    autoCapitalize="off"
-                                    autoComplete="off"
-                                    data-gramm="false"
-                                    placeholder="Paste second JSON to compare..."
-                                />
-                            </div>
-                        </>
-                    )}
                 </div>
 
                 <div className={styles.divider} />
@@ -448,7 +356,6 @@ export default function JsonFormatter() {
                                     defaultOpen={defaultOpen}
                                     resetKey={treeResetKey}
                                     onPathHover={setHoveredPath}
-                                    diffMap={diffMap}
                                 />
                             ) : (
                                 <pre className={styles.outputText}>{textOutput}</pre>

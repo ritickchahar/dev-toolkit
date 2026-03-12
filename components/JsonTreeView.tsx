@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import styles from './JsonFormatter.module.css';
 
-export type DiffStatus = 'added' | 'removed' | 'changed';
-
 function HighlightText({ text, query }: { text: string; query: string }) {
     if (!query) return <>{text}</>;
     const lower = text.toLowerCase();
@@ -45,10 +43,9 @@ interface NodeProps {
     defaultOpen: boolean;
     resetKey: number;
     onPathHover: (path: string | null) => void;
-    diffMap?: Map<string, DiffStatus>;
 }
 
-function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultOpen, resetKey, onPathHover, diffMap }: NodeProps) {
+function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultOpen, resetKey, onPathHover }: NodeProps) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     useEffect(() => {
@@ -59,8 +56,6 @@ function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultO
     const isObject = !isArray && typeof data === 'object' && data !== null;
     const isExpandable = isArray || isObject;
     const comma = isLast ? '' : ',';
-    const diffStatus = diffMap?.get(path);
-    const diffClass = diffStatus ? styles[`diff${diffStatus.charAt(0).toUpperCase()}${diffStatus.slice(1)}`] : '';
 
     const keyEl = keyName !== undefined ? (
         <span className={styles.nodeKey}>
@@ -102,7 +97,7 @@ function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultO
 
         return (
             <div
-                className={`${styles.treeRow} ${isMatch || keyMatch ? styles.searchMatchRow : ''} ${diffClass}`}
+                className={`${styles.treeRow} ${isMatch || keyMatch ? styles.searchMatchRow : ''}`}
                 onMouseEnter={() => onPathHover(path)}
                 onMouseLeave={() => onPathHover(null)}
             >
@@ -140,7 +135,7 @@ function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultO
         : false;
 
     return (
-        <div className={`${styles.treeBlock} ${diffClass}`}>
+        <div className={styles.treeBlock}>
             <div
                 className={`${styles.treeRow} ${styles.expandableRow} ${keyMatch ? styles.searchMatchRow : ''}`}
                 onClick={() => setIsOpen(o => !o)}
@@ -173,7 +168,6 @@ function TreeNode({ data, keyName, path, isLast, searchQuery, sortKeys, defaultO
                             defaultOpen={defaultOpen}
                             resetKey={resetKey}
                             onPathHover={onPathHover}
-                            diffMap={diffMap}
                         />
                     ))}
                 </div>
@@ -196,10 +190,9 @@ export interface JsonTreeViewProps {
     defaultOpen: boolean;
     resetKey: number;
     onPathHover: (path: string | null) => void;
-    diffMap?: Map<string, DiffStatus>;
 }
 
-export default function JsonTreeView({ data, searchQuery, sortKeys, defaultOpen, resetKey, onPathHover, diffMap }: JsonTreeViewProps) {
+export default function JsonTreeView({ data, searchQuery, sortKeys, defaultOpen, resetKey, onPathHover }: JsonTreeViewProps) {
     return (
         <div className={styles.treeRoot}>
             <TreeNode
@@ -211,7 +204,6 @@ export default function JsonTreeView({ data, searchQuery, sortKeys, defaultOpen,
                 defaultOpen={defaultOpen}
                 resetKey={resetKey}
                 onPathHover={onPathHover}
-                diffMap={diffMap}
             />
         </div>
     );
