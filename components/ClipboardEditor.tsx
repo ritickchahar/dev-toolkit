@@ -2,102 +2,58 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import styles from './ClipboardEditor.module.css';
+import {
+    loadClipboardAction, upsertTabAction, saveTabContentAction,
+    deleteTabAction, setActiveTabAction,
+} from '@/app/actions/clipboard';
+import type { ClipTab } from '@/lib/dal/clipboard';
 
-interface Tab {
-    id: string;
-    name: string;
-}
-
-interface Meta {
-    activeId: string;
-    counter: number;
-    tabs: Tab[];
-}
-
-function getCookie(name: string): string {
-    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
-function setCookie(name: string, value: string) {
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000`;
-}
-
-function deleteCookie(name: string) {
-    document.cookie = `${name}=; path=/; max-age=0`;
-}
-
-function loadMeta(): Meta | null {
-    const raw = getCookie('clipboard_meta');
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
-}
-
-function saveMeta(meta: Meta) {
-    setCookie('clipboard_meta', JSON.stringify(meta));
-}
-
-function loadContent(id: string): string {
-    return getCookie(`clipboard_content_${id}`);
-}
-
-function saveContent(id: string, content: string) {
-    setCookie(`clipboard_content_${id}`, content);
-}
-
-function deleteContent(id: string) {
-    deleteCookie(`clipboard_content_${id}`);
-}
-
-function makeTab(counter: number): Tab {
+function makeTab(ord: number): ClipTab {
     return {
-        id: `t${counter}`,
-        name: counter === 1 ? 'Untitled' : `Untitled ${counter}`,
+        id: `t${ord}`,
+        title: ord === 1 ? 'Untitled' : `Untitled ${ord}`,
+        ord,
+        createdAt: new Date().toISOString(),
+        content: '',
     };
 }
 
 export default function ClipboardEditor() {
-    const [tabs, setTabs] = useState<Tab[]>([]);
+    const [tabs, setTabs] = useState<ClipTab[]>([]);
     const [activeId, setActiveId] = useState('');
     const [counter, setCounter] = useState(1);
     const [contents, setContents] = useState<Record<string, string>>({});
     const [copied, setCopied] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
+    const [loaded, setLoaded] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const renameInputRef = useRef<HTMLInputElement>(null);
     const gutterRef = useRef<HTMLDivElement>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const initialized = useRef(false);
 
     useEffect(() => {
-        if (initialized.current) return;
-        initialized.current = true;
-
-        const meta = loadMeta();
-        if (meta && meta.tabs.length > 0) {
-            const loaded: Record<string, string> = {};
-            for (const tab of meta.tabs) {
-                loaded[tab.id] = loadContent(tab.id);
+        loadClipboardAction().then(({ tabs: dbTabs, activeId: dbActiveId }) => {
+            if (dbTabs.length > 0) {
+                const loaded: Record<string, string> = {};
+                for (const tab of dbTabs) loaded[tab.id] = tab.content;
+                const maxOrd = dbTabs.reduce((m, t) => Math.max(m, t.ord), 0);
+                setTabs(dbTabs);
+                setActiveId(dbActiveId || dbTabs[0].id);
+                setCounter(maxOrd);
+                setContents(loaded);
+            } else {
+                const first = makeTab(1);
+                setTabs([first]);
+                setActiveId(first.id);
+                setCounter(1);
+                setContents({ [first.id]: '' });
+                upsertTabAction(first);
             }
-            setTabs(meta.tabs);
-            setActiveId(meta.activeId);
-            setCounter(meta.counter);
-            setContents(loaded);
-        } else {
-            const first = makeTab(1);
-            setTabs([first]);
-            setActiveId(first.id);
-            setCounter(1);
-            setContents({ [first.id]: '' });
-        }
+            setLoaded(true);
+        });
     }, []);
-
-    useEffect(() => {
-        if (!initialized.current || tabs.length === 0) return;
-        saveMeta({ activeId, counter, tabs });
-    }, [tabs, activeId, counter]);
 
     const activeContent = contents[activeId] ?? '';
     const lines = activeContent === '' ? 1 : activeContent.split('\n').length;
@@ -107,7 +63,7 @@ export default function ClipboardEditor() {
         setContents(prev => ({ ...prev, [activeId]: value }));
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
-            saveContent(activeId, value);
+            saveTabContentAction(activeId, value);
         }, 300);
     }
 
@@ -118,49 +74,47 @@ export default function ClipboardEditor() {
         setContents(prev => ({ ...prev, [tab.id]: '' }));
         setActiveId(tab.id);
         setCounter(next);
-        saveContent(tab.id, '');
+        upsertTabAction(tab);
+        setActiveTabAction(tab.id);
         setTimeout(() => textareaRef.current?.focus(), 0);
     }
 
     function handleCloseTab(id: string, e: React.MouseEvent) {
         e.stopPropagation();
         if (tabs.length === 1) return;
-
         const idx = tabs.findIndex(t => t.id === id);
         const remaining = tabs.filter(t => t.id !== id);
-
-        deleteContent(id);
-        setContents(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
+        deleteTabAction(id);
+        setContents(prev => { const next = { ...prev }; delete next[id]; return next; });
         setTabs(remaining);
-
         if (activeId === id) {
             const nextTab = remaining[Math.min(idx, remaining.length - 1)];
             setActiveId(nextTab.id);
+            setActiveTabAction(nextTab.id);
         }
     }
 
     function handleTabClick(id: string) {
         setActiveId(id);
+        setActiveTabAction(id);
         setTimeout(() => textareaRef.current?.focus(), 0);
     }
 
     function handleTabDoubleClick(id: string, name: string) {
         setEditingId(id);
         setEditingName(name);
-        setTimeout(() => {
-            renameInputRef.current?.select();
-        }, 0);
+        setTimeout(() => renameInputRef.current?.select(), 0);
     }
 
     function commitRename() {
         if (!editingId) return;
-        const trimmed = editingName.trim();
-        const finalName = trimmed || 'Untitled';
-        setTabs(prev => prev.map(t => t.id === editingId ? { ...t, name: finalName } : t));
+        const finalName = editingName.trim() || 'Untitled';
+        setTabs(prev => prev.map(t => {
+            if (t.id !== editingId) return t;
+            const updated = { ...t, title: finalName };
+            upsertTabAction(updated);
+            return updated;
+        }));
         setEditingId(null);
     }
 
@@ -187,7 +141,7 @@ export default function ClipboardEditor() {
         }
     }, []);
 
-    if (tabs.length === 0) return null;
+    if (!loaded || tabs.length === 0) return null;
 
     return (
         <div className={styles.wrapper}>
@@ -217,7 +171,7 @@ export default function ClipboardEditor() {
                         key={tab.id}
                         className={`${styles.tab} ${tab.id === activeId ? styles.tabActive : ''}`}
                         onClick={() => handleTabClick(tab.id)}
-                        onDoubleClick={() => handleTabDoubleClick(tab.id, tab.name)}
+                        onDoubleClick={() => handleTabDoubleClick(tab.id, tab.title)}
                     >
                         {editingId === tab.id ? (
                             <input
@@ -230,7 +184,7 @@ export default function ClipboardEditor() {
                                 onClick={e => e.stopPropagation()}
                             />
                         ) : (
-                            <span className={styles.tabName}>{tab.name}</span>
+                            <span className={styles.tabName}>{tab.title}</span>
                         )}
                         {tabs.length > 1 && (
                             <span

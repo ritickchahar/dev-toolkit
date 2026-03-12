@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
 import { themes } from '@/config/themes';
 import styles from './Sidebar.module.css';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 
 interface Topic {
     name: string;
@@ -71,6 +72,12 @@ export default function Sidebar() {
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
     const [collapsed, setCollapsed] = useState(false);
+
+    useEffect(() => {
+        getSettingAction('sidebar_collapsed').then(val => {
+            if (val === 'true') setCollapsed(true);
+        });
+    }, []);
     const [notesOpen, setNotesOpen] = useState(() => pathname.startsWith('/notes/'));
     const [topics, setTopics] = useState<Topic[]>([]);
     const [topicsLoading, setTopicsLoading] = useState(true);
@@ -176,7 +183,7 @@ export default function Sidebar() {
             <button
                 id="sidebar-toggle"
                 className={styles.toggleBtn}
-                onClick={() => setCollapsed((c) => !c)}
+                onClick={() => setCollapsed((c) => { setSettingAction('sidebar_collapsed', String(!c)); return !c; })}
                 title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
                 {collapsed ? '›' : '‹'}

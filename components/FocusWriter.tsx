@@ -2,80 +2,42 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './FocusWriter.module.css';
-
-const STORAGE_KEY = 'dev-toolkit-focus-writer';
-
-interface Chapter {
-    id: string;
-    title: string;
-    content: string;
-    order: number;
-}
-
-interface Project {
-    id: string;
-    name: string;
-    mode: 'prose' | 'screenplay';
-    chapters: Chapter[];
-    backgroundUrl: string;
-    font: string;
-    fontSize: number;
-    dailyGoal: number;
-    createdAt: string;
-    updatedAt: string;
-}
-
-interface AppState {
-    projects: Project[];
-    activeProjectId: string;
-    activeChapterId: string;
-    editorOpacity: number;
-    editorPosition: 'left' | 'center' | 'right';
-    editorWidth: number;
-    editorHeight: number;
-    editorRadius: number;
-    bgBlur: number;
-    bgDim: number;
-}
+import {
+    loadWriterAction, getChaptersAction,
+    upsertProjectAction, deleteProjectAction,
+    upsertChapterAction, deleteChapterAction,
+    setWriterUiAction,
+    addWriterImageAction, deleteWriterImageAction,
+} from '@/app/actions/writer';
+import type { WriterProject, WriterChapter, WriterUi } from '@/lib/dal/writer';
+import type { BgImage } from '@/lib/dal/images';
 
 const FONTS = ['Georgia', 'Times New Roman', 'Palatino', 'Inter', 'Arial', 'JetBrains Mono', 'Courier New'];
 const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
 
-function genId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function countWords(text: string) { const t = text.trim(); return t ? t.split(/\s+/).length : 0; }
+
+function makeProject(name: string): WriterProject {
+    const now = new Date().toISOString();
+    return { id: genId(), name, mode: 'prose', font: 'Georgia', fontSize: 18, dailyGoal: 0, createdAt: now, updatedAt: now };
 }
 
-function newChapter(title: string, order: number): Chapter {
-    return { id: genId(), title, content: '', order };
-}
-
-function newProject(name: string): Project {
-    const ch = newChapter('Chapter 1', 0);
-    return {
-        id: genId(), name, mode: 'prose',
-        chapters: [ch], backgroundUrl: '',
-        font: 'Georgia', fontSize: 18, dailyGoal: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
-}
-
-function loadState(): AppState {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return JSON.parse(raw);
-    } catch { /* noop */ }
-    const p = newProject('Untitled');
-    return { projects: [p], activeProjectId: p.id, activeChapterId: p.chapters[0].id, editorOpacity: 0.82, editorPosition: 'center', editorWidth: 780, editorHeight: 100, editorRadius: 12, bgBlur: 0, bgDim: 35 };
-}
-
-function countWords(text: string): number {
-    const t = text.trim();
-    return t ? t.split(/\s+/).length : 0;
+function makeChapter(projectId: string, title: string, ord: number): WriterChapter {
+    return { id: genId(), projectId, title, content: '', ord };
 }
 
 export default function FocusWriter() {
-    const [state, setState] = useState<AppState>(() => loadState());
+    const [projects, setProjects] = useState<WriterProject[]>([]);
+    const [chapters, setChapters] = useState<WriterChapter[]>([]);
+    const [ui, setUi] = useState<WriterUi>({
+        editorOpacity: 0.82, editorPosition: 'center', editorWidth: 780,
+        editorHeight: 100, editorRadius: 12, bgBlur: 0, bgDim: 35,
+        activeBgId: '', activeProjectId: '', activeChapterId: '',
+    });
+    const [images, setImages] = useState<BgImage[]>([]);
+    const [loaded, setLoaded] = useState(false);
+
     const [showSidebar, setShowSidebar] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showFind, setShowFind] = useState(false);
@@ -88,28 +50,69 @@ export default function FocusWriter() {
     const [newChapterTitle, setNewChapterTitle] = useState('');
     const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
     const [editingChapterTitle, setEditingChapterTitle] = useState('');
+    const [newImageUrl, setNewImageUrl] = useState('');
+    const [newImageLabel, setNewImageLabel] = useState('');
+
     const editorRef = useRef<HTMLDivElement>(null);
     const saveTimer = useRef<ReturnType<typeof setTimeout>>();
-
-    const project = state.projects.find(p => p.id === state.activeProjectId);
-    const chapter = project?.chapters.find(c => c.id === state.activeChapterId);
+    const uiRef = useRef(ui);
+    uiRef.current = ui;
+    const chaptersRef = useRef(chapters);
+    chaptersRef.current = chapters;
 
     useEffect(() => {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* noop */ }
-    }, [state]);
-
-    const flushContent = useCallback(() => {
-        if (!editorRef.current) return;
-        const html = editorRef.current.innerHTML;
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            const c = p?.chapters.find(c => c.id === next.activeChapterId);
-            if (c) c.content = html;
-            if (p) p.updatedAt = new Date().toISOString();
-            return next;
+        loadWriterAction().then(({ projects: ps, chapters: chs, ui: u, images: imgs }) => {
+            if (ps.length === 0) {
+                const p = makeProject('Untitled');
+                const ch = makeChapter(p.id, 'Chapter 1', 0);
+                setProjects([p]);
+                setChapters([ch]);
+                setUi(prev => ({ ...prev, ...u, activeProjectId: p.id, activeChapterId: ch.id }));
+                setImages(imgs);
+                upsertProjectAction(p);
+                upsertChapterAction(ch);
+                setWriterUiAction('activeProjectId', p.id);
+                setWriterUiAction('activeChapterId', ch.id);
+            } else {
+                setProjects(ps);
+                setChapters(chs);
+                setUi(u);
+                setImages(imgs);
+            }
+            setLoaded(true);
         });
     }, []);
+
+    useEffect(() => {
+        document.body.classList.toggle('focus-writer-active', focusMode);
+        return () => { document.body.classList.remove('focus-writer-active'); };
+    }, [focusMode]);
+
+    const project = projects.find(p => p.id === ui.activeProjectId);
+    const chapter = chapters.find(c => c.id === ui.activeChapterId);
+
+    function updateUi<K extends keyof WriterUi>(key: K, value: WriterUi[K]) {
+        setUi(prev => ({ ...prev, [key]: value }));
+        setWriterUiAction(key, String(value));
+    }
+
+    function updateProject(field: keyof WriterProject, value: string | number) {
+        if (!project) return;
+        const updated: WriterProject = { ...project, [field]: value, updatedAt: new Date().toISOString() };
+        setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+        upsertProjectAction(updated);
+    }
+
+    function flushContent() {
+        if (!editorRef.current) return;
+        const html = editorRef.current.innerHTML;
+        const ch = chaptersRef.current.find(c => c.id === uiRef.current.activeChapterId);
+        if (!ch) return;
+        const updated = { ...ch, content: html };
+        setChapters(prev => prev.map(c => c.id === updated.id ? updated : c));
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        upsertChapterAction(updated);
+    }
 
     const saveContent = useCallback(() => {
         if (!editorRef.current) return;
@@ -117,17 +120,20 @@ export default function FocusWriter() {
         setWordCount(countWords(text));
         setCharCount(text.length);
         if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(flushContent, 500);
-    }, [flushContent]);
+        saveTimer.current = setTimeout(() => {
+            const html = editorRef.current?.innerHTML ?? '';
+            const ch = chaptersRef.current.find(c => c.id === uiRef.current.activeChapterId);
+            if (ch) upsertChapterAction({ ...ch, content: html });
+        }, 500);
+    }, []);
 
     useEffect(() => {
-        if (editorRef.current && chapter) {
-            editorRef.current.innerHTML = chapter.content;
-            const text = editorRef.current.innerText || '';
-            setWordCount(countWords(text));
-            setCharCount(text.length);
-        }
-    }, [state.activeChapterId, state.activeProjectId]);
+        if (!loaded || !editorRef.current) return;
+        editorRef.current.innerHTML = chapter?.content ?? '';
+        const text = editorRef.current.innerText || '';
+        setWordCount(countWords(text));
+        setCharCount(text.length);
+    }, [ui.activeChapterId, ui.activeProjectId, loaded]);
 
     const format = useCallback((cmd: string, value?: string) => {
         document.execCommand(cmd, false, value);
@@ -143,10 +149,8 @@ export default function FocusWriter() {
         if (el.nodeType === 3) el = el.parentElement!;
         while (el && el !== editorRef.current && el.tagName !== 'DIV') el = el.parentElement!;
         if (!el || el === editorRef.current) return;
-
         el.removeAttribute('style');
         el.setAttribute('data-element', type);
-
         const map: Record<string, Record<string, string>> = {
             'scene-heading': { textTransform: 'uppercase', fontWeight: 'bold' },
             'character': { textTransform: 'uppercase', textAlign: 'center', paddingLeft: '25%' },
@@ -158,125 +162,141 @@ export default function FocusWriter() {
         saveContent();
     }, [saveContent]);
 
-    const addProject = useCallback((name: string) => {
+    function addProject(name: string) {
         if (!name.trim()) return;
         flushContent();
-        const p = newProject(name.trim());
-        setState(prev => ({
-            ...prev,
-            projects: [...prev.projects, p],
-            activeProjectId: p.id,
-            activeChapterId: p.chapters[0].id,
-        }));
+        const p = makeProject(name.trim());
+        const ch = makeChapter(p.id, 'Chapter 1', 0);
+        setProjects(prev => [...prev, p]);
+        setChapters([ch]);
+        setUi(prev => ({ ...prev, activeProjectId: p.id, activeChapterId: ch.id }));
+        upsertProjectAction(p);
+        upsertChapterAction(ch);
+        setWriterUiAction('activeProjectId', p.id);
+        setWriterUiAction('activeChapterId', ch.id);
         setNewProjectName('');
-    }, [flushContent]);
+    }
 
-    const deleteProject = useCallback((id: string) => {
-        setState(prev => {
-            const projects = prev.projects.filter(p => p.id !== id);
-            if (projects.length === 0) {
-                const p = newProject('Untitled');
-                return { ...prev, projects: [p], activeProjectId: p.id, activeChapterId: p.chapters[0].id };
-            }
-            if (prev.activeProjectId === id) {
-                return { ...prev, projects, activeProjectId: projects[0].id, activeChapterId: projects[0].chapters[0].id };
-            }
-            return { ...prev, projects };
-        });
-    }, []);
-
-    const addChapter = useCallback((title: string) => {
-        if (!title.trim()) return;
+    function deleteProject(id: string) {
         flushContent();
-        const ch = newChapter(title.trim(), project?.chapters.length || 0);
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            if (p) p.chapters.push(ch);
-            next.activeChapterId = ch.id;
-            return next;
-        });
+        deleteProjectAction(id);
+        const remaining = projects.filter(p => p.id !== id);
+        if (remaining.length === 0) {
+            const p = makeProject('Untitled');
+            const ch = makeChapter(p.id, 'Chapter 1', 0);
+            setProjects([p]);
+            setChapters([ch]);
+            setUi(prev => ({ ...prev, activeProjectId: p.id, activeChapterId: ch.id }));
+            upsertProjectAction(p);
+            upsertChapterAction(ch);
+            setWriterUiAction('activeProjectId', p.id);
+            setWriterUiAction('activeChapterId', ch.id);
+        } else {
+            setProjects(remaining);
+            if (ui.activeProjectId === id) {
+                const next = remaining[0];
+                getChaptersAction(next.id).then(chs => {
+                    const newChId = chs[0]?.id ?? '';
+                    setChapters(chs);
+                    setUi(prev => ({ ...prev, activeProjectId: next.id, activeChapterId: newChId }));
+                    setWriterUiAction('activeProjectId', next.id);
+                    setWriterUiAction('activeChapterId', newChId);
+                });
+            }
+        }
+    }
+
+    function addChapter(title: string) {
+        if (!title.trim() || !ui.activeProjectId) return;
+        flushContent();
+        const ch = makeChapter(ui.activeProjectId, title.trim(), chapters.length);
+        setChapters(prev => [...prev, ch]);
+        setUi(prev => ({ ...prev, activeChapterId: ch.id }));
+        upsertChapterAction(ch);
+        setWriterUiAction('activeChapterId', ch.id);
         setNewChapterTitle('');
-    }, [flushContent, project]);
+    }
 
-    const deleteChapter = useCallback((id: string) => {
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            if (!p) return prev;
-            p.chapters = p.chapters.filter(c => c.id !== id);
-            if (p.chapters.length === 0) {
-                const ch = newChapter('Chapter 1', 0);
-                p.chapters = [ch];
-                next.activeChapterId = ch.id;
-            } else if (next.activeChapterId === id) {
-                next.activeChapterId = p.chapters[0].id;
+    function deleteChapter(id: string) {
+        flushContent();
+        deleteChapterAction(id);
+        const remaining = chapters.filter(c => c.id !== id);
+        if (remaining.length === 0) {
+            const ch = makeChapter(ui.activeProjectId, 'Chapter 1', 0);
+            upsertChapterAction(ch);
+            setChapters([ch]);
+            setUi(prev => ({ ...prev, activeChapterId: ch.id }));
+            setWriterUiAction('activeChapterId', ch.id);
+        } else {
+            setChapters(remaining);
+            if (ui.activeChapterId === id) {
+                setUi(prev => ({ ...prev, activeChapterId: remaining[0].id }));
+                setWriterUiAction('activeChapterId', remaining[0].id);
             }
-            return next;
-        });
-    }, []);
+        }
+    }
 
-    const switchChapter = useCallback((chapterId: string) => {
+    function switchChapter(chapterId: string) {
         flushContent();
-        setState(prev => ({ ...prev, activeChapterId: chapterId }));
-    }, [flushContent]);
+        setUi(prev => ({ ...prev, activeChapterId: chapterId }));
+        setWriterUiAction('activeChapterId', chapterId);
+    }
 
-    const switchProject = useCallback((projectId: string) => {
+    function switchProject(projectId: string) {
         flushContent();
-        setState(prev => {
-            const targetProj = prev.projects.find(p => p.id === projectId);
-            return {
-                ...prev,
-                activeProjectId: projectId,
-                activeChapterId: targetProj?.chapters[0]?.id || '',
-            };
+        getChaptersAction(projectId).then(chs => {
+            const newChId = chs[0]?.id ?? '';
+            setChapters(chs);
+            setUi(prev => ({ ...prev, activeProjectId: projectId, activeChapterId: newChId }));
+            setWriterUiAction('activeProjectId', projectId);
+            setWriterUiAction('activeChapterId', newChId);
         });
-    }, [flushContent]);
+    }
 
-    const renameChapter = useCallback((id: string, title: string) => {
+    function renameChapter(id: string, title: string) {
         if (!title.trim()) return;
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            const c = p?.chapters.find(c => c.id === id);
-            if (c) c.title = title.trim();
-            return next;
-        });
+        const updated = chapters.map(c => c.id === id ? { ...c, title: title.trim() } : c);
+        setChapters(updated);
+        const ch = updated.find(c => c.id === id);
+        if (ch) upsertChapterAction(ch);
         setEditingChapterId(null);
-    }, []);
+    }
 
-    const moveChapter = useCallback((id: string, direction: -1 | 1) => {
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            if (!p) return prev;
-            const idx = p.chapters.findIndex(c => c.id === id);
-            const target = idx + direction;
-            if (target < 0 || target >= p.chapters.length) return prev;
-            [p.chapters[idx], p.chapters[target]] = [p.chapters[target], p.chapters[idx]];
-            return next;
-        });
-    }, []);
+    function moveChapter(id: string, direction: -1 | 1) {
+        const idx = chapters.findIndex(c => c.id === id);
+        const target = idx + direction;
+        if (target < 0 || target >= chapters.length) return;
+        const reordered = [...chapters];
+        [reordered[idx], reordered[target]] = [reordered[target], reordered[idx]];
+        const updated = reordered.map((c, i) => ({ ...c, ord: i }));
+        setChapters(updated);
+        updated.forEach(c => upsertChapterAction(c));
+    }
 
-    const updateProjectField = useCallback((field: string, value: string | number) => {
-        setState(prev => {
-            const next = JSON.parse(JSON.stringify(prev)) as AppState;
-            const p = next.projects.find(p => p.id === next.activeProjectId);
-            if (p) (p as Record<string, unknown>)[field] = value;
-            return next;
-        });
-    }, []);
+    function handleAddImage() {
+        if (!newImageUrl.trim()) return;
+        const img: BgImage = { id: genId(), url: newImageUrl.trim(), label: newImageLabel.trim(), addedAt: new Date().toISOString() };
+        setImages(prev => [img, ...prev]);
+        addWriterImageAction(img);
+        setNewImageUrl('');
+        setNewImageLabel('');
+    }
+
+    function handleDeleteImage(id: string) {
+        setImages(prev => prev.filter(i => i.id !== id));
+        deleteWriterImageAction(id);
+        if (ui.activeBgId === id) updateUi('activeBgId', '');
+    }
 
     const handleExport = useCallback((fmt: 'txt' | 'md' | 'json') => {
         if (!project) return;
         let content = '';
         let filename = '';
-
         if (fmt === 'json') {
-            content = JSON.stringify(project, null, 2);
+            content = JSON.stringify({ ...project, chapters }, null, 2);
             filename = `${project.name}.json`;
         } else {
-            content = project.chapters.map(ch => {
+            content = chapters.map(ch => {
                 const doc = new DOMParser().parseFromString(ch.content || '<p></p>', 'text/html');
                 const text = doc.body.innerText;
                 return fmt === 'md'
@@ -285,15 +305,12 @@ export default function FocusWriter() {
             }).join('\n\n---\n\n');
             filename = `${project.name}.${fmt}`;
         }
-
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
+        a.href = url; a.download = filename; a.click();
         URL.revokeObjectURL(url);
-    }, [project]);
+    }, [project, chapters]);
 
     const handleFind = useCallback(() => {
         if (findText) (window as Window & { find?: (s: string) => boolean }).find?.(findText);
@@ -301,10 +318,7 @@ export default function FocusWriter() {
 
     const handleReplace = useCallback(() => {
         const sel = window.getSelection();
-        if (sel?.toString() === findText) {
-            document.execCommand('insertText', false, replaceText);
-            saveContent();
-        }
+        if (sel?.toString() === findText) { document.execCommand('insertText', false, replaceText); saveContent(); }
         handleFind();
     }, [findText, replaceText, handleFind, saveContent]);
 
@@ -331,27 +345,28 @@ export default function FocusWriter() {
         return () => window.removeEventListener('keydown', handler);
     }, [focusMode, showFind, showSettings, showSidebar]);
 
+    const activeBgUrl = images.find(img => img.id === ui.activeBgId)?.url;
     const readingTime = Math.max(1, Math.ceil(wordCount / 200));
-    const chapterIndex = project?.chapters.findIndex(c => c.id === state.activeChapterId) ?? 0;
+    const chapterIndex = chapters.findIndex(c => c.id === ui.activeChapterId);
 
-    if (!project || !chapter) return null;
+    if (!loaded || !project || !chapter) return null;
 
     return (
         <div
             className={styles.wrapper}
             style={{
-                backgroundImage: project.backgroundUrl ? `url(${project.backgroundUrl})` : undefined,
+                backgroundImage: activeBgUrl ? `url(${activeBgUrl})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
         >
-            {project.backgroundUrl && (
+            {activeBgUrl && (
                 <div
                     className={styles.bgOverlay}
                     style={{
-                        background: `rgba(0, 0, 0, ${state.bgDim / 100})`,
-                        backdropFilter: state.bgBlur > 0 ? `blur(${state.bgBlur}px)` : undefined,
-                        WebkitBackdropFilter: state.bgBlur > 0 ? `blur(${state.bgBlur}px)` : undefined,
+                        background: `rgba(0, 0, 0, ${ui.bgDim / 100})`,
+                        backdropFilter: ui.bgBlur > 0 ? `blur(${ui.bgBlur}px)` : undefined,
+                        WebkitBackdropFilter: ui.bgBlur > 0 ? `blur(${ui.bgBlur}px)` : undefined,
                     }}
                 />
             )}
@@ -367,9 +382,9 @@ export default function FocusWriter() {
                         </span>
                     </div>
                     <div className={styles.toolbarCenter}>
-                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('bold'); }} title="Bold (Ctrl+B)"><b>B</b></button>
-                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('italic'); }} title="Italic (Ctrl+I)"><i>I</i></button>
-                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('underline'); }} title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('bold'); }} title="Bold"><b>B</b></button>
+                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('italic'); }} title="Italic"><i>I</i></button>
+                        <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('underline'); }} title="Underline"><u>U</u></button>
                         <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('strikeThrough'); }} title="Strikethrough"><s>S</s></button>
                         <span className={styles.toolDivider} />
                         <button className={styles.toolBtn} onMouseDown={e => { e.preventDefault(); format('formatBlock', 'h1'); }} title="Heading 1">H1</button>
@@ -383,11 +398,7 @@ export default function FocusWriter() {
                         {project.mode === 'screenplay' && (
                             <>
                                 <span className={styles.toolDivider} />
-                                <select
-                                    className={styles.toolSelect}
-                                    onChange={e => { applyScreenplayElement(e.target.value); e.target.value = ''; }}
-                                    defaultValue=""
-                                >
+                                <select className={styles.toolSelect} onChange={e => { applyScreenplayElement(e.target.value); e.target.value = ''; }} defaultValue="">
                                     <option value="" disabled>Element</option>
                                     <option value="scene-heading">Scene Heading</option>
                                     <option value="action">Action</option>
@@ -400,28 +411,16 @@ export default function FocusWriter() {
                         )}
                     </div>
                     <div className={styles.toolbarRight}>
-                        <select
-                            className={styles.toolSelect}
-                            value={project.font}
-                            onChange={e => updateProjectField('font', e.target.value)}
-                        >
+                        <select className={styles.toolSelect} value={project.font} onChange={e => updateProject('font', e.target.value)}>
                             {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
                         </select>
-                        <select
-                            className={styles.toolSelect}
-                            value={project.fontSize}
-                            onChange={e => updateProjectField('fontSize', parseInt(e.target.value))}
-                        >
+                        <select className={styles.toolSelect} value={project.fontSize} onChange={e => updateProject('fontSize', parseInt(e.target.value))}>
                             {FONT_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
                         </select>
-                        <button className={styles.toolBtn} onClick={() => setShowFind(f => !f)} title="Find (Ctrl+F)">⌕</button>
+                        <button className={styles.toolBtn} onClick={() => setShowFind(f => !f)} title="Find">⌕</button>
                         <button className={styles.toolBtn} onClick={() => setFocusMode(true)} title="Focus Mode">◎</button>
                         <button className={styles.toolBtn} onClick={() => setShowSettings(s => !s)} title="Settings">⚙</button>
-                        <select
-                            className={styles.toolSelect}
-                            onChange={e => { if (e.target.value) handleExport(e.target.value as 'txt' | 'md' | 'json'); e.target.value = ''; }}
-                            defaultValue=""
-                        >
+                        <select className={styles.toolSelect} onChange={e => { if (e.target.value) handleExport(e.target.value as 'txt' | 'md' | 'json'); e.target.value = ''; }} defaultValue="">
                             <option value="" disabled>Export</option>
                             <option value="txt">.txt</option>
                             <option value="md">.md</option>
@@ -433,21 +432,8 @@ export default function FocusWriter() {
 
             {showFind && !focusMode && (
                 <div className={styles.findBar}>
-                    <input
-                        className={styles.findInput}
-                        value={findText}
-                        onChange={e => setFindText(e.target.value)}
-                        placeholder="Find..."
-                        autoFocus
-                        onKeyDown={e => e.key === 'Enter' && handleFind()}
-                    />
-                    <input
-                        className={styles.findInput}
-                        value={replaceText}
-                        onChange={e => setReplaceText(e.target.value)}
-                        placeholder="Replace..."
-                        onKeyDown={e => e.key === 'Enter' && handleReplace()}
-                    />
+                    <input className={styles.findInput} value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." autoFocus onKeyDown={e => e.key === 'Enter' && handleFind()} />
+                    <input className={styles.findInput} value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." onKeyDown={e => e.key === 'Enter' && handleReplace()} />
                     <button className={styles.findBtn} onClick={handleFind}>Find</button>
                     <button className={styles.findBtn} onClick={handleReplace}>Replace</button>
                     <button className={styles.findBtn} onClick={handleReplaceAll}>All</button>
@@ -460,19 +446,15 @@ export default function FocusWriter() {
                     <div className={styles.sidebar}>
                         <div className={styles.sidebarSection}>
                             <div className={styles.sidebarHeader}>Projects</div>
-                            {state.projects.map(p => (
+                            {projects.map(p => (
                                 <div
                                     key={p.id}
-                                    className={`${styles.sidebarItem} ${p.id === state.activeProjectId ? styles.sidebarItemActive : ''}`}
+                                    className={`${styles.sidebarItem} ${p.id === ui.activeProjectId ? styles.sidebarItemActive : ''}`}
                                     onClick={() => switchProject(p.id)}
                                 >
                                     <span className={styles.sidebarItemLabel}>{p.name}</span>
-                                    <span className={styles.sidebarItemMeta}>{p.chapters.length} ch</span>
-                                    {state.projects.length > 1 && (
-                                        <button
-                                            className={styles.sidebarDeleteBtn}
-                                            onClick={e => { e.stopPropagation(); deleteProject(p.id); }}
-                                        >×</button>
+                                    {projects.length > 1 && (
+                                        <button className={styles.sidebarDeleteBtn} onClick={e => { e.stopPropagation(); deleteProject(p.id); }}>×</button>
                                     )}
                                 </div>
                             ))}
@@ -490,10 +472,10 @@ export default function FocusWriter() {
 
                         <div className={styles.sidebarSection}>
                             <div className={styles.sidebarHeader}>Chapters</div>
-                            {project.chapters.map((c, i) => (
+                            {chapters.map((c, i) => (
                                 <div
                                     key={c.id}
-                                    className={`${styles.sidebarItem} ${c.id === state.activeChapterId ? styles.sidebarItemActive : ''}`}
+                                    className={`${styles.sidebarItem} ${c.id === ui.activeChapterId ? styles.sidebarItemActive : ''}`}
                                     onClick={() => switchChapter(c.id)}
                                     onDoubleClick={() => { setEditingChapterId(c.id); setEditingChapterTitle(c.title); }}
                                 >
@@ -502,10 +484,7 @@ export default function FocusWriter() {
                                             className={styles.sidebarRenameInput}
                                             value={editingChapterTitle}
                                             onChange={e => setEditingChapterTitle(e.target.value)}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') renameChapter(c.id, editingChapterTitle);
-                                                if (e.key === 'Escape') setEditingChapterId(null);
-                                            }}
+                                            onKeyDown={e => { if (e.key === 'Enter') renameChapter(c.id, editingChapterTitle); if (e.key === 'Escape') setEditingChapterId(null); }}
                                             onBlur={() => renameChapter(c.id, editingChapterTitle)}
                                             autoFocus
                                             onClick={e => e.stopPropagation()}
@@ -514,16 +493,9 @@ export default function FocusWriter() {
                                         <span className={styles.sidebarItemLabel}>{c.title}</span>
                                     )}
                                     <div className={styles.sidebarItemActions}>
-                                        {i > 0 && (
-                                            <button className={styles.sidebarMoveBtn} onClick={e => { e.stopPropagation(); moveChapter(c.id, -1); }}>↑</button>
-                                        )}
-                                        {i < project.chapters.length - 1 && (
-                                            <button className={styles.sidebarMoveBtn} onClick={e => { e.stopPropagation(); moveChapter(c.id, 1); }}>↓</button>
-                                        )}
-                                        <button
-                                            className={styles.sidebarDeleteBtn}
-                                            onClick={e => { e.stopPropagation(); deleteChapter(c.id); }}
-                                        >×</button>
+                                        {i > 0 && <button className={styles.sidebarMoveBtn} onClick={e => { e.stopPropagation(); moveChapter(c.id, -1); }}>↑</button>}
+                                        {i < chapters.length - 1 && <button className={styles.sidebarMoveBtn} onClick={e => { e.stopPropagation(); moveChapter(c.id, 1); }}>↓</button>}
+                                        <button className={styles.sidebarDeleteBtn} onClick={e => { e.stopPropagation(); deleteChapter(c.id); }}>×</button>
                                     </div>
                                 </div>
                             ))}
@@ -543,7 +515,7 @@ export default function FocusWriter() {
 
                 <div
                     className={styles.editorContainer}
-                    style={{ justifyContent: state.editorPosition === 'left' ? 'flex-start' : state.editorPosition === 'right' ? 'flex-end' : 'center' }}
+                    style={{ justifyContent: ui.editorPosition === 'left' ? 'flex-start' : ui.editorPosition === 'right' ? 'flex-end' : 'center' }}
                 >
                     <div
                         ref={editorRef}
@@ -555,10 +527,10 @@ export default function FocusWriter() {
                         style={{
                             fontFamily: project.font,
                             fontSize: `${project.fontSize}px`,
-                            background: `rgba(20, 20, 25, ${state.editorOpacity})`,
-                            maxWidth: `${state.editorWidth}px`,
-                            height: `${state.editorHeight}%`,
-                            borderRadius: `${state.editorRadius}px`,
+                            background: `rgba(20, 20, 25, ${ui.editorOpacity})`,
+                            maxWidth: `${ui.editorWidth}px`,
+                            height: `${ui.editorHeight}%`,
+                            borderRadius: `${ui.editorRadius}px`,
                         }}
                     />
                 </div>
@@ -577,10 +549,7 @@ export default function FocusWriter() {
                             <span className={styles.statusItem}>
                                 Goal: {wordCount}/{project.dailyGoal}
                                 <span className={styles.goalBar}>
-                                    <span
-                                        className={styles.goalFill}
-                                        style={{ width: `${Math.min(100, Math.round(wordCount / project.dailyGoal * 100))}%` }}
-                                    />
+                                    <span className={styles.goalFill} style={{ width: `${Math.min(100, Math.round(wordCount / project.dailyGoal * 100))}%` }} />
                                 </span>
                             </span>
                         </>
@@ -588,7 +557,7 @@ export default function FocusWriter() {
                     <span className={styles.statusSpacer} />
                     <span className={styles.statusItem}>{project.mode === 'screenplay' ? 'Script' : 'Prose'}</span>
                     <span className={styles.statusDot}>·</span>
-                    <span className={styles.statusItem}>Ch {chapterIndex + 1}/{project.chapters.length}</span>
+                    <span className={styles.statusItem}>Ch {chapterIndex + 1}/{chapters.length}</span>
                 </div>
             )}
 
@@ -605,70 +574,22 @@ export default function FocusWriter() {
                         </div>
                         <div className={styles.settingsBody}>
                             <label className={styles.settingsLabel}>
-                                Background Image URL
-                                <input
-                                    className={styles.settingsInput}
-                                    value={project.backgroundUrl}
-                                    onChange={e => updateProjectField('backgroundUrl', e.target.value)}
-                                    placeholder="https://images.unsplash.com/..."
-                                />
-                            </label>
-                            <label className={styles.settingsLabel}>
-                                Background Blur ({state.bgBlur}px)
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="40"
-                                    step="1"
-                                    value={state.bgBlur}
-                                    onChange={e => setState(prev => ({ ...prev, bgBlur: parseInt(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
-                            </label>
-                            <label className={styles.settingsLabel}>
-                                Background Dim ({state.bgDim}%)
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="90"
-                                    step="5"
-                                    value={state.bgDim}
-                                    onChange={e => setState(prev => ({ ...prev, bgDim: parseInt(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
-                            </label>
-                            <label className={styles.settingsLabel}>
-                                Editor Opacity ({Math.round(state.editorOpacity * 100)}%)
-                                <input
-                                    type="range"
-                                    min="0.3"
-                                    max="1"
-                                    step="0.05"
-                                    value={state.editorOpacity}
-                                    onChange={e => setState(prev => ({ ...prev, editorOpacity: parseFloat(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
-                            </label>
-                            <label className={styles.settingsLabel}>
                                 Writing Mode
-                                <select
-                                    className={styles.settingsSelect}
-                                    value={project.mode}
-                                    onChange={e => updateProjectField('mode', e.target.value)}
-                                >
+                                <select className={styles.settingsSelect} value={project.mode} onChange={e => updateProject('mode', e.target.value)}>
                                     <option value="prose">Prose (Novel / Story)</option>
                                     <option value="screenplay">Screenplay / Script</option>
                                 </select>
                             </label>
                             <label className={styles.settingsLabel}>
+                                Daily Word Goal
+                                <input type="number" className={styles.settingsInput} value={project.dailyGoal || ''} onChange={e => updateProject('dailyGoal', parseInt(e.target.value) || 0)} placeholder="0 (disabled)" min="0" />
+                            </label>
+                            <div className={styles.settingsDivider} />
+                            <label className={styles.settingsLabel}>
                                 Editor Position
                                 <div className={styles.positionBtns}>
                                     {(['left', 'center', 'right'] as const).map(pos => (
-                                        <button
-                                            key={pos}
-                                            className={`${styles.positionBtn} ${state.editorPosition === pos ? styles.positionBtnActive : ''}`}
-                                            onClick={() => setState(prev => ({ ...prev, editorPosition: pos }))}
-                                        >
+                                        <button key={pos} className={`${styles.positionBtn} ${ui.editorPosition === pos ? styles.positionBtnActive : ''}`} onClick={() => updateUi('editorPosition', pos)}>
                                             {pos === 'left' ? '⫷' : pos === 'center' ? '⊞' : '⫸'}
                                             <span>{pos.charAt(0).toUpperCase() + pos.slice(1)}</span>
                                         </button>
@@ -676,51 +597,56 @@ export default function FocusWriter() {
                                 </div>
                             </label>
                             <label className={styles.settingsLabel}>
-                                Editor Width ({state.editorWidth}px)
-                                <input
-                                    type="range"
-                                    min="320"
-                                    max="1400"
-                                    step="20"
-                                    value={state.editorWidth}
-                                    onChange={e => setState(prev => ({ ...prev, editorWidth: parseInt(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
+                                Editor Width ({ui.editorWidth}px)
+                                <input type="range" min="320" max="1400" step="20" value={ui.editorWidth} onChange={e => updateUi('editorWidth', parseInt(e.target.value))} className={styles.settingsRange} />
                             </label>
                             <label className={styles.settingsLabel}>
-                                Editor Height ({state.editorHeight}%)
-                                <input
-                                    type="range"
-                                    min="20"
-                                    max="100"
-                                    step="5"
-                                    value={state.editorHeight}
-                                    onChange={e => setState(prev => ({ ...prev, editorHeight: parseInt(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
+                                Editor Height ({ui.editorHeight}%)
+                                <input type="range" min="20" max="100" step="5" value={ui.editorHeight} onChange={e => updateUi('editorHeight', parseInt(e.target.value))} className={styles.settingsRange} />
                             </label>
                             <label className={styles.settingsLabel}>
-                                Corner Radius ({state.editorRadius}px)
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="40"
-                                    step="2"
-                                    value={state.editorRadius}
-                                    onChange={e => setState(prev => ({ ...prev, editorRadius: parseInt(e.target.value) }))}
-                                    className={styles.settingsRange}
-                                />
+                                Corner Radius ({ui.editorRadius}px)
+                                <input type="range" min="0" max="40" step="2" value={ui.editorRadius} onChange={e => updateUi('editorRadius', parseInt(e.target.value))} className={styles.settingsRange} />
                             </label>
                             <label className={styles.settingsLabel}>
-                                Daily Word Goal
-                                <input
-                                    type="number"
-                                    className={styles.settingsInput}
-                                    value={project.dailyGoal || ''}
-                                    onChange={e => updateProjectField('dailyGoal', parseInt(e.target.value) || 0)}
-                                    placeholder="0 (disabled)"
-                                    min="0"
-                                />
+                                Editor Opacity ({Math.round(ui.editorOpacity * 100)}%)
+                                <input type="range" min="0.3" max="1" step="0.05" value={ui.editorOpacity} onChange={e => updateUi('editorOpacity', parseFloat(e.target.value))} className={styles.settingsRange} />
+                            </label>
+                            <div className={styles.settingsDivider} />
+                            <label className={styles.settingsLabel}>
+                                Background Blur ({ui.bgBlur}px)
+                                <input type="range" min="0" max="40" step="1" value={ui.bgBlur} onChange={e => updateUi('bgBlur', parseInt(e.target.value))} className={styles.settingsRange} />
+                            </label>
+                            <label className={styles.settingsLabel}>
+                                Background Dim ({ui.bgDim}%)
+                                <input type="range" min="0" max="90" step="5" value={ui.bgDim} onChange={e => updateUi('bgDim', parseInt(e.target.value))} className={styles.settingsRange} />
+                            </label>
+                            <div className={styles.settingsDivider} />
+                            <label className={styles.settingsLabel}>
+                                Background Images
+                                <div className={styles.imageAddRow}>
+                                    <input className={styles.settingsInput} value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="Image URL..." onKeyDown={e => e.key === 'Enter' && handleAddImage()} />
+                                    <input className={styles.settingsInput} value={newImageLabel} onChange={e => setNewImageLabel(e.target.value)} placeholder="Label (optional)" onKeyDown={e => e.key === 'Enter' && handleAddImage()} />
+                                    <button className={styles.imageAddBtn} onClick={handleAddImage}>Add</button>
+                                </div>
+                                {images.length > 0 ? (
+                                    <div className={styles.imageGrid}>
+                                        {images.map(img => (
+                                            <div
+                                                key={img.id}
+                                                className={`${styles.imageTile} ${ui.activeBgId === img.id ? styles.imageTileActive : ''}`}
+                                                onClick={() => updateUi('activeBgId', ui.activeBgId === img.id ? '' : img.id)}
+                                                title={img.label || img.url}
+                                            >
+                                                <div className={styles.imageTileThumb} style={{ backgroundImage: `url(${img.url})` }} />
+                                                <span className={styles.imageTileLabel}>{img.label || 'untitled'}</span>
+                                                <button className={styles.imageTileDelete} onClick={e => { e.stopPropagation(); handleDeleteImage(img.id); }}>×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className={styles.imageEmpty}>No images added yet</span>
+                                )}
                             </label>
                         </div>
                     </div>

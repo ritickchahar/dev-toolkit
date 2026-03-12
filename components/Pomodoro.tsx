@@ -4,20 +4,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Script from 'next/script';
 import ThemeSelector from './ThemeSelector';
 import styles from './Pomodoro.module.css';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 
 // ── Types ──
 type Phase = 'setup' | 'posture-load' | 'posture-cam' | 'posture-correct' | 'posture-wrong' | 'focus' | 'complete' | 'break';
 interface Settings { defaultDuration: number; sound: boolean; }
 
-const STORAGE_KEY = 'dev-toolkit-pomodoro-settings';
 const PRESETS = [25, 45, 60];
 const MIN_SAMPLES = 5;
-
-function loadSettings(): Settings {
-    try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : { defaultDuration: 25, sound: true }; }
-    catch { return { defaultDuration: 25, sound: true }; }
-}
-function saveSettings(s: Settings) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { } }
 
 function pad(n: number) { return n.toString().padStart(2, '0'); }
 
@@ -46,7 +40,7 @@ declare global {
 
 export default function Pomodoro() {
     const [phase, setPhase] = useState<Phase>('setup');
-    const [settings, setSettings] = useState<Settings>(loadSettings);
+    const [settings, setSettings] = useState<Settings>({ defaultDuration: 25, sound: true });
     const [showSettings, setShowSettings] = useState(false);
 
     // Setup
@@ -82,12 +76,27 @@ export default function Pomodoro() {
     // Complete
     const [postureScore, setPostureScore] = useState(0);
 
-    // ── Settings ──
+    useEffect(() => {
+        Promise.all([
+            getSettingAction('pomodoro_duration'),
+            getSettingAction('pomodoro_sound'),
+        ]).then(([dur, snd]) => {
+            const next: Settings = {
+                defaultDuration: dur ? parseInt(dur) : 25,
+                sound: snd !== 'false',
+            };
+            setSettings(next);
+            setDuration(next.defaultDuration);
+        });
+    }, []);
+
     useEffect(() => { setDuration(settings.defaultDuration); }, [settings.defaultDuration]);
 
     function updateSettings(patch: Partial<Settings>) {
         const next = { ...settings, ...patch };
-        setSettings(next); saveSettings(next);
+        setSettings(next);
+        if (patch.defaultDuration !== undefined) setSettingAction('pomodoro_duration', String(patch.defaultDuration));
+        if (patch.sound !== undefined) setSettingAction('pomodoro_sound', String(patch.sound));
     }
 
     // ── Cleanup ──
