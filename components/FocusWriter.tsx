@@ -34,6 +34,8 @@ interface AppState {
     editorWidth: number;
     editorHeight: number;
     editorRadius: number;
+    bgBlur: number;
+    bgDim: number;
 }
 
 const FONTS = ['Georgia', 'Times New Roman', 'Palatino', 'Inter', 'Arial', 'JetBrains Mono', 'Courier New'];
@@ -64,7 +66,7 @@ function loadState(): AppState {
         if (raw) return JSON.parse(raw);
     } catch { /* noop */ }
     const p = newProject('Untitled');
-    return { projects: [p], activeProjectId: p.id, activeChapterId: p.chapters[0].id, editorOpacity: 0.82, editorPosition: 'center', editorWidth: 780, editorHeight: 100, editorRadius: 12 };
+    return { projects: [p], activeProjectId: p.id, activeChapterId: p.chapters[0].id, editorOpacity: 0.82, editorPosition: 'center', editorWidth: 780, editorHeight: 100, editorRadius: 12, bgBlur: 0, bgDim: 35 };
 }
 
 function countWords(text: string): number {
@@ -343,7 +345,16 @@ export default function FocusWriter() {
                 backgroundPosition: 'center',
             }}
         >
-            {project.backgroundUrl && <div className={styles.bgOverlay} />}
+            {project.backgroundUrl && (
+                <div
+                    className={styles.bgOverlay}
+                    style={{
+                        background: `rgba(0, 0, 0, ${state.bgDim / 100})`,
+                        backdropFilter: state.bgBlur > 0 ? `blur(${state.bgBlur}px)` : undefined,
+                        WebkitBackdropFilter: state.bgBlur > 0 ? `blur(${state.bgBlur}px)` : undefined,
+                    }}
+                />
+            )}
 
             {!focusMode && (
                 <div className={styles.toolbar}>
@@ -600,6 +611,30 @@ export default function FocusWriter() {
                                     value={project.backgroundUrl}
                                     onChange={e => updateProjectField('backgroundUrl', e.target.value)}
                                     placeholder="https://images.unsplash.com/..."
+                                />
+                            </label>
+                            <label className={styles.settingsLabel}>
+                                Background Blur ({state.bgBlur}px)
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="40"
+                                    step="1"
+                                    value={state.bgBlur}
+                                    onChange={e => setState(prev => ({ ...prev, bgBlur: parseInt(e.target.value) }))}
+                                    className={styles.settingsRange}
+                                />
+                            </label>
+                            <label className={styles.settingsLabel}>
+                                Background Dim ({state.bgDim}%)
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="90"
+                                    step="5"
+                                    value={state.bgDim}
+                                    onChange={e => setState(prev => ({ ...prev, bgDim: parseInt(e.target.value) }))}
+                                    className={styles.settingsRange}
                                 />
                             </label>
                             <label className={styles.settingsLabel}>
