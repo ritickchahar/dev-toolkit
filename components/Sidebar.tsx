@@ -64,6 +64,7 @@ const tools = [
     { label: 'CSV', href: '/csv-viewer', icon: '▦' },
     { label: 'Notepad', href: '/notes-pad', icon: '≡' },
     { label: 'Pomodoro', href: '/pomodoro', icon: '◔' },
+    { label: 'Writer', href: '/focus-writer', icon: '✎' },
 ];
 
 export default function Sidebar() {
