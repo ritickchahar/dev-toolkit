@@ -55,6 +55,7 @@ function setCache(topics: Topic[]) {
 }
 
 const tools = [
+    { label: 'Writer', href: '/focus-writer', icon: '✎' },
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
     { label: 'Diff', href: '/diff', icon: '⇄' },
     { label: 'JSON', href: '/json-formatter', icon: '{}' },
@@ -65,7 +66,6 @@ const tools = [
     { label: 'CSV', href: '/csv-viewer', icon: '▦' },
     { label: 'Notepad', href: '/notes-pad', icon: '≡' },
     { label: 'Pomodoro', href: '/pomodoro', icon: '◔' },
-    { label: 'Writer', href: '/focus-writer', icon: '✎' },
 ];
 
 export default function Sidebar() {
