@@ -1,32 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import ThemeSelector from './ThemeSelector';
 import styles from './NotesPad.module.css';
+import { getNotesAction, createNoteAction, deleteNoteAction } from '@/app/actions/notes';
+import type { Note } from '@/lib/dal/notes';
 
-const STORAGE_KEY = 'dev-toolkit-notes-pad';
 const PER_PAGE = 6;
-
-interface Note {
-    id: string;
-    title: string;
-    body: string;
-    createdAt: string;
-}
-
-function loadNotes(): { notes: Note[]; ok: boolean } {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return { notes: raw ? (JSON.parse(raw) as Note[]) : [], ok: true };
-    } catch {
-        return { notes: [], ok: false };
-    }
-}
-
-function saveNotes(notes: Note[]): boolean {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); return true; }
-    catch { return false; }
-}
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
@@ -37,41 +17,31 @@ function fmtDate(iso: string) {
 
 export default function NotesPad() {
     const [notes, setNotes] = useState<Note[]>([]);
-    const [storageOk, setStorageOk] = useState(true);
     const [page, setPage] = useState(0);
-
-    // Create form
     const [showForm, setShowForm] = useState(false);
     const [formTitle, setFormTitle] = useState('');
     const [formBody, setFormBody] = useState('');
     const [formError, setFormError] = useState('');
-
-    // View modal
     const [viewing, setViewing] = useState<Note | null>(null);
 
     useEffect(() => {
-        const { notes: loaded, ok } = loadNotes();
-        setNotes(loaded);
-        setStorageOk(ok);
-    }, []);
-
-    const persist = useCallback((next: Note[]) => {
-        setNotes(next);
-        if (!saveNotes(next)) setStorageOk(false);
+        getNotesAction().then(setNotes);
     }, []);
 
     function handleSave() {
         const title = formTitle.trim();
         if (!title) { setFormError('Title is required.'); return; }
         const note: Note = { id: genId(), title, body: formBody, createdAt: new Date().toISOString() };
-        persist([note, ...notes]);
+        setNotes(prev => [note, ...prev]);
+        createNoteAction(note);
         setFormTitle(''); setFormBody(''); setFormError(''); setShowForm(false);
         setPage(0);
     }
 
     function handleDelete(id: string) {
         const next = notes.filter(n => n.id !== id);
-        persist(next);
+        setNotes(next);
+        deleteNoteAction(id);
         const maxPage = Math.max(0, Math.ceil(next.length / PER_PAGE) - 1);
         if (page > maxPage) setPage(maxPage);
     }
@@ -85,7 +55,6 @@ export default function NotesPad() {
 
     return (
         <div className={styles.wrapper}>
-            {/* Toolbar */}
             <div className={styles.toolbar}>
                 <span className={styles.toolbarLabel}>Notes Pad</span>
                 <div className={styles.toolbarActions}>
@@ -96,12 +65,7 @@ export default function NotesPad() {
                 </div>
             </div>
 
-            {!storageOk && (
-                <div className={styles.warning}>Storage unavailable. Notes will not persist after closing the tab.</div>
-            )}
-
             <div className={styles.content}>
-                {/* Create form */}
                 {showForm && (
                     <div className={styles.formPanel}>
                         <input
@@ -130,7 +94,6 @@ export default function NotesPad() {
                     </div>
                 )}
 
-                {/* Notes grid */}
                 {notes.length === 0 && !showForm ? (
                     <p className={styles.empty}>No notes yet. Click New Note to create one.</p>
                 ) : (
@@ -150,7 +113,6 @@ export default function NotesPad() {
                     </div>
                 )}
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className={styles.pagination}>
                         <button
@@ -168,7 +130,6 @@ export default function NotesPad() {
                 )}
             </div>
 
-            {/* View modal */}
             {viewing && (
                 <div className={styles.overlay} onClick={() => setViewing(null)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -180,7 +141,6 @@ export default function NotesPad() {
                 </div>
             )}
 
-            {/* Status bar */}
             <div className={styles.statusBar}>
                 <span className={styles.statusItem}>
                     {notes.length} note{notes.length !== 1 ? 's' : ''}

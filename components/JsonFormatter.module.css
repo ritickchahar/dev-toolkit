@@ -14,18 +14,29 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
+    gap: 8px;
 }
 
 .toolbarLabel {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .toolbarActions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
+    overflow-x: auto;
+}
+
+.toolbarSep {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 0 2px;
 }
 
 .actionBtn {
@@ -38,6 +49,8 @@
     font-family: 'JetBrains Mono', monospace;
     cursor: pointer;
     transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .actionBtn:hover:not(:disabled) {
@@ -68,29 +81,77 @@
     background: rgba(241, 76, 76, 0.08);
 }
 
-.themeToggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
+.actionSelect {
+    background: var(--bg-primary);
     border: 1px solid var(--border);
     color: var(--text-secondary);
-    padding: 3px 10px;
+    padding: 3px 6px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
     cursor: pointer;
-    transition: all 0.15s;
+    outline: none;
 }
 
-.themeToggle:hover {
-    background: var(--bg-hover);
+.actionSelect:hover {
     color: var(--text-primary);
     border-color: var(--text-secondary);
 }
 
-.themeLabel {
+.actionSelect:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.searchBar {
+    height: 32px;
+    min-height: 32px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+}
+
+.searchIcon {
+    color: var(--text-dim);
+    font-size: 14px;
+}
+
+.searchInput {
+    flex: 1;
+    max-width: 360px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+}
+
+.searchInput:focus {
+    border-color: var(--accent);
+}
+
+.searchClear,
+.searchClose {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 3px;
     font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+}
+
+.searchClear:hover,
+.searchClose:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
 }
 
 .editors {
@@ -114,12 +175,51 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 12px;
     font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    gap: 8px;
+}
+
+.panelHeaderActions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.panelBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.panelBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.pathDisplay {
+    color: var(--accent);
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: normal;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.9;
 }
 
 .divider {
@@ -223,6 +323,7 @@
     align-items: center;
     padding: 0 12px;
     gap: 0;
+    overflow: hidden;
 }
 
 .statusItem {
@@ -230,6 +331,7 @@
     font-family: 'JetBrains Mono', monospace;
     color: rgba(255, 255, 255, 0.75);
     padding: 0 6px;
+    white-space: nowrap;
 }
 
 .statusValid {
@@ -240,7 +342,184 @@
     color: #f47b7b;
 }
 
+.statusDecodeInfo {
+    color: #d19a66;
+}
+
 .statusDivider {
     color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+}
+
+/* ── Tree view ───────────────────────────────────────────── */
+
+.treeRoot {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1;
+    padding: 4px 0;
+}
+
+.treeBlock {
+    display: block;
+}
+
+.treeRow {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    min-height: 22px;
+    white-space: nowrap;
+    position: relative;
+}
+
+.treeRow:hover .inlineCopyBtn {
+    opacity: 1;
+}
+
+.expandableRow {
+    cursor: pointer;
+    user-select: none;
+}
+
+.expandableRow:hover {
+    background: var(--bg-hover);
+}
+
+.treeChildren {
+    border-left: 1px solid var(--border);
+    margin-left: 14px;
+    padding-left: 10px;
+}
+
+.toggleArrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: var(--text-dim);
+    width: 14px;
+    min-width: 14px;
+    height: 14px;
+    transform: rotate(0deg);
+    transition: transform 0.12s ease;
+    flex-shrink: 0;
+}
+
+.arrowOpen {
+    transform: rotate(90deg);
+}
+
+.togglePlaceholder {
+    display: inline-block;
+    width: 14px;
+    min-width: 14px;
+    flex-shrink: 0;
+}
+
+.nodeKey {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.jsonQuote {
+    color: var(--text-dim);
+    font-weight: normal;
+}
+
+.jsonColon {
+    color: var(--text-secondary);
+    font-weight: normal;
+    margin-right: 2px;
+}
+
+.jsonPunct {
+    color: var(--text-secondary);
+}
+
+.jsonString {
+    color: #98c379;
+}
+
+.jsonNumber {
+    color: #d19a66;
+}
+
+.jsonBoolean {
+    color: #56b6c2;
+}
+
+.jsonNull {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.collapsedSummary {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 11px;
+    padding: 0 6px;
+}
+
+.inlineCopyBtn {
+    opacity: 0;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 10px;
+    padding: 0 4px;
+    height: 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-left: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: opacity 0.1s;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.inlineCopyBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.searchMark {
+    background: #f6c90e;
+    color: #1a1a1a;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+.searchMatchRow {
+    background: rgba(246, 201, 14, 0.08);
+}
+
+/* ── Theme selector passthrough ──────────────────────────── */
+
+.themeToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.themeToggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.themeLabel {
     font-size: 11px;
 }

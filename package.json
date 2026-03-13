@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/diff-match-patch": "^1.0.36",
+    "better-sqlite3": "^12.6.2",
     "diff-match-patch": "^1.0.5",
     "next": "16.1.6",
     "react": "19.2.3",

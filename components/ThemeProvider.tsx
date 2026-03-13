@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { themes, DEFAULT_THEME_ID, getTheme, type Theme } from '@/config/themes';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 
 interface ThemeContextType {
     theme: Theme;
@@ -32,6 +33,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const t = getTheme(stored ?? DEFAULT_THEME_ID);
         setThemeState(t);
         applyTheme(t);
+        getSettingAction('theme').then(dbVal => {
+            if (dbVal && dbVal !== stored) {
+                const dt = getTheme(dbVal);
+                setThemeState(dt);
+                applyTheme(dt);
+                localStorage.setItem('dev-toolkit-theme', dbVal);
+            }
+        });
     }, []);
 
     function setTheme(id: string) {
@@ -39,6 +48,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setThemeState(t);
         applyTheme(t);
         localStorage.setItem('dev-toolkit-theme', id);
+        setSettingAction('theme', id);
     }
 
     return (
