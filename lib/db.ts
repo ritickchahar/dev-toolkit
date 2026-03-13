@@ -55,6 +55,20 @@ function createSchema(db: ReturnType<typeof Database>) {
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS writer_snapshots (
+            id           TEXT PRIMARY KEY,
+            project_id   TEXT NOT NULL REFERENCES writer_projects(id) ON DELETE CASCADE,
+            label        TEXT NOT NULL,
+            content_json TEXT NOT NULL,
+            created_at   TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS writer_sessions (
+            id               TEXT PRIMARY KEY,
+            project_id       TEXT NOT NULL,
+            date             TEXT NOT NULL,
+            words_written    INTEGER NOT NULL DEFAULT 0,
+            duration_seconds INTEGER NOT NULL DEFAULT 0
+        );
     `);
 }
 
