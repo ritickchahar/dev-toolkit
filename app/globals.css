@@ -68,7 +68,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-hover);
 }
-
-body.focus-writer-active aside {
-  display: none !important;
-}

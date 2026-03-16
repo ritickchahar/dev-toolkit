@@ -55,7 +55,6 @@ function setCache(topics: Topic[]) {
 }
 
 const tools = [
-    { label: 'Writer', href: '/focus-writer', icon: '✎' },
     { label: 'Clipboard', href: '/clipboard', icon: '⧉' },
     { label: 'Diff', href: '/diff', icon: '⇄' },
     { label: 'JSON', href: '/json-formatter', icon: '{}' },

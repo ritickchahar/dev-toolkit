@@ -34,41 +34,6 @@ function createSchema(db: ReturnType<typeof Database>) {
             body       TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL
         );
-        CREATE TABLE IF NOT EXISTS writer_projects (
-            id         TEXT PRIMARY KEY,
-            name       TEXT NOT NULL,
-            mode       TEXT NOT NULL DEFAULT 'prose',
-            font       TEXT NOT NULL DEFAULT 'Georgia',
-            font_size  INTEGER NOT NULL DEFAULT 18,
-            daily_goal INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS writer_chapters (
-            id         TEXT PRIMARY KEY,
-            project_id TEXT NOT NULL REFERENCES writer_projects(id) ON DELETE CASCADE,
-            title      TEXT NOT NULL,
-            content    TEXT NOT NULL DEFAULT '',
-            ord        INTEGER NOT NULL DEFAULT 0
-        );
-        CREATE TABLE IF NOT EXISTS writer_ui (
-            key   TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS writer_snapshots (
-            id           TEXT PRIMARY KEY,
-            project_id   TEXT NOT NULL REFERENCES writer_projects(id) ON DELETE CASCADE,
-            label        TEXT NOT NULL,
-            content_json TEXT NOT NULL,
-            created_at   TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS writer_sessions (
-            id               TEXT PRIMARY KEY,
-            project_id       TEXT NOT NULL,
-            date             TEXT NOT NULL,
-            words_written    INTEGER NOT NULL DEFAULT 0,
-            duration_seconds INTEGER NOT NULL DEFAULT 0
-        );
     `);
 }
 
