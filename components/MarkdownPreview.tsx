@@ -105,50 +105,45 @@ export default function MarkdownPreview() {
                 </div>
             </div>
 
-            {/* Editors */}
             <div className={styles.editors}>
-                {/* Left — Editor */}
-                {!fullscreen && (
-                    <div className={styles.panel}>
-                        <div className={styles.panelHeader}>
-                            <span className={styles.panelLabel}>Markdown</span>
-                            <div className={styles.insertBar}>
-                                {INSERTS.map(({ label, title, before, after }) => (
-                                    <button
-                                        key={label}
-                                        className={styles.insertBtn}
-                                        title={title}
-                                        onClick={() => insert(before, after)}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={styles.editorArea}>
-                            <div ref={gutterRef} className={styles.gutter}>
-                                {Array.from({ length: lineCount }, (_, i) => (
-                                    <div key={i} className={styles.lineNum}>{i + 1}</div>
-                                ))}
-                            </div>
-                            <textarea
-                                ref={editorRef}
-                                id="md-editor"
-                                className={styles.textarea}
-                                value={markdown}
-                                onChange={handleChange}
-                                onScroll={syncGutter}
-                                spellCheck={false}
-                                autoCorrect="off"
-                                autoCapitalize="off"
-                            />
+                <div className={`${styles.panel} ${fullscreen ? styles.panelHidden : ''}`}>
+                    <div className={styles.panelHeader}>
+                        <span className={styles.panelLabel}>Markdown</span>
+                        <div className={styles.insertBar}>
+                            {INSERTS.map(({ label, title, before, after }) => (
+                                <button
+                                    key={label}
+                                    className={styles.insertBtn}
+                                    title={title}
+                                    onClick={() => insert(before, after)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                )}
+                    <div className={styles.editorArea}>
+                        <div ref={gutterRef} className={styles.gutter}>
+                            {Array.from({ length: lineCount }, (_, i) => (
+                                <div key={i} className={styles.lineNum}>{i + 1}</div>
+                            ))}
+                        </div>
+                        <textarea
+                            ref={editorRef}
+                            id="md-editor"
+                            className={styles.textarea}
+                            value={markdown}
+                            onChange={handleChange}
+                            onScroll={syncGutter}
+                            spellCheck={false}
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                        />
+                    </div>
+                </div>
 
-                <div className={styles.divider} />
+                <div className={`${styles.divider} ${fullscreen ? styles.dividerHidden : ''}`} />
 
-                {/* Right — Preview */}
                 <div className={`${styles.panel} ${fullscreen ? styles.panelFull : ''}`}>
                     <div className={styles.panelHeader}>
                         <span className={styles.panelLabel}>Preview</span>

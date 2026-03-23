@@ -60,17 +60,29 @@
     display: flex;
     flex-direction: column;
     width: 50%;
+    min-width: 0;
     overflow: hidden;
+    transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panelFull {
     width: 100%;
 }
 
+.panelHidden {
+    width: 0;
+}
+
 .divider {
     width: 1px;
     background: var(--border);
     flex-shrink: 0;
+    transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dividerHidden {
+    width: 0;
+    opacity: 0;
 }
 
 /* ── Panel header ── */
