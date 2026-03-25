@@ -69,7 +69,9 @@ function syncGutter(textarea: HTMLTextAreaElement | null, gutter: HTMLDivElement
 }
 
 export default function JsonFormatter() {
-    const [input, setInput] = useState('');
+    const [input, setInput] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('json-formatter-input') ?? '') : ''
+    );
     const [viewMode, setViewMode] = useState<ViewMode>('tree');
     const [minify, setMinify] = useState(false);
     const [sortKeys, setSortKeys] = useState(false);
@@ -88,6 +90,8 @@ export default function JsonFormatter() {
     const searchRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => { localStorage.setItem('json-formatter-input', input); }, [input]);
 
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);

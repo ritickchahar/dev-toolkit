@@ -23,7 +23,9 @@ const INSERTS = [
 
 export default function MarkdownPreview() {
     const { theme } = useTheme();
-    const [markdown, setMarkdown] = useState('');
+    const [markdown, setMarkdown] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('markdown-preview-input') ?? '') : ''
+    );
     const [displayed, setDisplayed] = useState('');
     const [fullscreen, setFullscreen] = useState(false);
     const [copiedMd, setCopiedMd] = useState(false);
@@ -34,6 +36,8 @@ export default function MarkdownPreview() {
     const gutterRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => { localStorage.setItem('markdown-preview-input', markdown); }, [markdown]);
 
     // Debounced preview update
     useEffect(() => {

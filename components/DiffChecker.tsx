@@ -98,8 +98,12 @@ function computeLineDiff(left: string, right: string): { leftLines: LineInfo[]; 
 }
 
 export default function DiffChecker() {
-    const [leftText, setLeftText] = useState('');
-    const [rightText, setRightText] = useState('');
+    const [leftText, setLeftText] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('diff-checker-left') ?? '') : ''
+    );
+    const [rightText, setRightText] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('diff-checker-right') ?? '') : ''
+    );
     const [leftLines, setLeftLines] = useState<LineInfo[]>([]);
     const [rightLines, setRightLines] = useState<LineInfo[]>([]);
     const [syncScrollEnabled, setSyncScrollEnabled] = useState(false);
@@ -113,6 +117,9 @@ export default function DiffChecker() {
     const diffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef(false);
     const syncScrollEnabledRef = useRef(false);
+
+    useEffect(() => { localStorage.setItem('diff-checker-left', leftText); }, [leftText]);
+    useEffect(() => { localStorage.setItem('diff-checker-right', rightText); }, [rightText]);
 
     useEffect(() => {
         syncScrollEnabledRef.current = syncScrollEnabled;
