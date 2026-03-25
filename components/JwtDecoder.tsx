@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ThemeSelector from './ThemeSelector';
 import styles from './JwtDecoder.module.css';
 
@@ -27,8 +27,12 @@ function fmtTs(val: unknown) {
 }
 
 export default function JwtDecoder() {
-    const [token, setToken] = useState('');
+    const [token, setToken] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('jwt-decoder-token') ?? '') : ''
+    );
     const [copied, setCopied] = useState<string | null>(null);
+
+    useEffect(() => { localStorage.setItem('jwt-decoder-token', token); }, [token]);
 
     function handleCopy(key: string, text: string) {
         navigator.clipboard.writeText(text).catch(() => { });

@@ -85,7 +85,9 @@ function rowsToTsv(headers: string[], rows: string[][]): string {
 }
 
 export default function CsvViewer() {
-    const [input, setInput] = useState('');
+    const [input, setInput] = useState(() =>
+        typeof window !== 'undefined' ? (localStorage.getItem('csv-viewer-input') ?? '') : ''
+    );
     const [delimChoice, setDelimChoice] = useState('auto');
     const [search, setSearch] = useState('');
     const [sortCol, setSortCol] = useState(-1);
@@ -111,6 +113,8 @@ export default function CsvViewer() {
         }, 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [input, delimChoice]);
+
+    useEffect(() => { localStorage.setItem('csv-viewer-input', input); }, [input]);
 
     // Reset sort when input changes
     useEffect(() => { setSortCol(-1); setSortDir('none'); }, [input]);
