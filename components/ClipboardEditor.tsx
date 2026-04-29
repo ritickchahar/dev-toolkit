@@ -146,7 +146,6 @@ export default function ClipboardEditor() {
     return (
         <div className={styles.wrapper}>
             <div className={styles.toolbar}>
-                <span className={styles.toolbarLabel}>clipboard</span>
                 <div className={styles.toolbarActions}>
                     <button
                         className={styles.actionBtn}
