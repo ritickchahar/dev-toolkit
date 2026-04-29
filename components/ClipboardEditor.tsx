@@ -10,7 +10,7 @@ import type { ClipTab } from '@/lib/dal/clipboard';
 
 function makeTab(ord: number): ClipTab {
     return {
-        id: `t${ord}`,
+        id: crypto.randomUUID(),
         title: ord === 1 ? 'Untitled' : `Untitled ${ord}`,
         ord,
         createdAt: new Date().toISOString(),
