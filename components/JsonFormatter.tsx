@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ThemeSelector from './ThemeSelector';
 import JsonTreeView from './JsonTreeView';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './JsonFormatter.module.css';
 
 type ViewMode = 'tree' | 'text';
@@ -80,6 +81,7 @@ export default function JsonFormatter() {
     const [defaultOpen, setDefaultOpen] = useState(true);
     const [treeResetKey, setTreeResetKey] = useState(0);
     const [copied, setCopied] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     const [parseResult, setParseResult] = useState<{ parsed: unknown; error: string; decodeInfo: string | null }>({ parsed: null, error: '', decodeInfo: null });
 
@@ -88,6 +90,61 @@ export default function JsonFormatter() {
     const searchRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const persistInputRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        Promise.all([
+            getSettingAction('json_input'),
+            getSettingAction('json_view_mode'),
+            getSettingAction('json_minify'),
+            getSettingAction('json_sort_keys'),
+            getSettingAction('json_indent_size'),
+            getSettingAction('json_default_open'),
+        ]).then(([inp, vm, mn, sk, isz, dop]) => {
+            if (inp) setInput(inp);
+            if (vm === 'tree' || vm === 'text') setViewMode(vm);
+            if (mn === '1') setMinify(true);
+            if (sk === '1') setSortKeys(true);
+            if (isz === '2' || isz === '4') setIndentSize(Number(isz) as IndentSize);
+            else if (isz === 'tab') setIndentSize('tab');
+            if (dop === '0') setDefaultOpen(false);
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        if (persistInputRef.current) clearTimeout(persistInputRef.current);
+        persistInputRef.current = setTimeout(() => {
+            setSettingAction('json_input', input);
+        }, 400);
+        return () => { if (persistInputRef.current) clearTimeout(persistInputRef.current); };
+    }, [input, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('json_view_mode', viewMode);
+    }, [viewMode, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('json_minify', minify ? '1' : '0');
+    }, [minify, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('json_sort_keys', sortKeys ? '1' : '0');
+    }, [sortKeys, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('json_indent_size', String(indentSize));
+    }, [indentSize, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('json_default_open', defaultOpen ? '1' : '0');
+    }, [defaultOpen, loaded]);
 
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);

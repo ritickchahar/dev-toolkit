@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ThemeSelector from './ThemeSelector';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './JwtDecoder.module.css';
 
 const CLAIM_LABELS: Record<string, string> = {
@@ -29,6 +30,24 @@ function fmtTs(val: unknown) {
 export default function JwtDecoder() {
     const [token, setToken] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
+    const [loaded, setLoaded] = useState(false);
+    const persistRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        getSettingAction('jwt_token').then(t => {
+            if (t) setToken(t);
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        if (persistRef.current) clearTimeout(persistRef.current);
+        persistRef.current = setTimeout(() => {
+            setSettingAction('jwt_token', token);
+        }, 400);
+        return () => { if (persistRef.current) clearTimeout(persistRef.current); };
+    }, [token, loaded]);
 
     function handleCopy(key: string, text: string) {
         navigator.clipboard.writeText(text).catch(() => { });

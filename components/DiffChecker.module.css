@@ -190,7 +190,23 @@
     pointer-events: none;
 }
 
-.overlayLine .mergeBtn {
+.buttonLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.buttonLayerInner {
+    position: relative;
+    will-change: transform;
+}
+
+.buttonLayer .mergeBtn {
     pointer-events: all;
 }
 
@@ -226,10 +242,17 @@
     z-index: 10;
 }
 
-.mergeBtn:hover {
+.mergeBtnLeft {
+    right: auto;
+    left: 4px;
+}
+
+.mergeBtn:hover,
+.mergeBtn:focus-visible {
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
+    outline: none;
 }
 
 .textarea {

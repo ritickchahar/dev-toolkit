@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import ThemeSelector from './ThemeSelector';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './ColorPicker.module.css';
 
 const DEFAULT_COLOR = '#3b82f6';
@@ -63,9 +64,25 @@ export default function ColorPicker() {
     const [isDragging, setIsDragging] = useState(false);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [copiedAll, setCopiedAll] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        getSettingAction('color_value').then(c => {
+            if (c && /^#[0-9a-fA-F]{6}$/.test(c)) {
+                setColor(c);
+                setHexInput(c);
+            }
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('color_value', color);
+    }, [color, loaded]);
 
     useEffect(() => {
         function handlePaste(e: ClipboardEvent) {

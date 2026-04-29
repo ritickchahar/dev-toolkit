@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ThemeSelector from './ThemeSelector';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './CsvViewer.module.css';
 
 // ── CSV parser (handles quoted fields, commas/newlines in quotes, escaped quotes) ──
@@ -93,11 +94,48 @@ export default function CsvViewer() {
     const [hovCol, setHovCol] = useState(-1);
     const [copiedCsv, setCopiedCsv] = useState(false);
     const [copiedTable, setCopiedTable] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const persistInputRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [parsed, setParsed] = useState<string[][]>([]);
     const [activeDelim, setActiveDelim] = useState(',');
     const fileRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        Promise.all([
+            getSettingAction('csv_input'),
+            getSettingAction('csv_delim_choice'),
+            getSettingAction('csv_sort_col'),
+            getSettingAction('csv_sort_dir'),
+        ]).then(([inp, dc, sc, sd]) => {
+            if (inp) setInput(inp);
+            if (dc) setDelimChoice(dc);
+            if (sc) setSortCol(Number(sc));
+            if (sd === 'asc' || sd === 'desc' || sd === 'none') setSortDir(sd);
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        if (persistInputRef.current) clearTimeout(persistInputRef.current);
+        persistInputRef.current = setTimeout(() => {
+            setSettingAction('csv_input', input);
+        }, 400);
+        return () => { if (persistInputRef.current) clearTimeout(persistInputRef.current); };
+    }, [input, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('csv_delim_choice', delimChoice);
+    }, [delimChoice, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('csv_sort_col', String(sortCol));
+        setSettingAction('csv_sort_dir', sortDir);
+    }, [sortCol, sortDir, loaded]);
 
     // Parse with debounce
     useEffect(() => {
@@ -112,8 +150,15 @@ export default function CsvViewer() {
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [input, delimChoice]);
 
-    // Reset sort when input changes
-    useEffect(() => { setSortCol(-1); setSortDir('none'); }, [input]);
+    // Reset sort when input changes (but not on initial hydration)
+    const initialInputRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!loaded) return;
+        if (initialInputRef.current === null) { initialInputRef.current = input; return; }
+        if (input === initialInputRef.current) return;
+        initialInputRef.current = input;
+        setSortCol(-1); setSortDir('none');
+    }, [input, loaded]);
 
     const headers = parsed[0] ?? [];
     const dataRows = parsed.slice(1);
