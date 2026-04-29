@@ -124,12 +124,20 @@ export default function ContextMenu() {
             }
         };
 
+        const handleBlur = () => {
+            if (isOpenByAlt) {
+                close();
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDownAlt);
         window.addEventListener('keyup', handleKeyUpAlt);
+        window.addEventListener('blur', handleBlur);
 
         return () => {
             window.removeEventListener('keydown', handleKeyDownAlt);
             window.removeEventListener('keyup', handleKeyUpAlt);
+            window.removeEventListener('blur', handleBlur);
         };
     }, [visible, isOpenByAlt, close]);
 
