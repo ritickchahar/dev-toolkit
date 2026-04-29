@@ -1,141 +1,173 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { diff_match_patch, DIFF_DELETE, DIFF_INSERT, DIFF_EQUAL, type Diff } from 'diff-match-patch';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { diff_match_patch, DIFF_DELETE, DIFF_INSERT, DIFF_EQUAL } from 'diff-match-patch';
 import ThemeSelector from './ThemeSelector';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './DiffChecker.module.css';
 
-interface LineInfo {
-    text: string;
-    type: 'removed' | 'added' | 'equal' | 'empty';
+interface LineMark {
+    type: 'removed' | 'added' | 'equal';
     chunkId: number | null;
 }
 
-function computeLineDiff(left: string, right: string): { leftLines: LineInfo[]; rightLines: LineInfo[] } {
+interface Chunk {
+    id: number;
+    leftStart: number;
+    leftEnd: number;
+    rightStart: number;
+    rightEnd: number;
+}
+
+interface DiffResult {
+    leftMarks: LineMark[];
+    rightMarks: LineMark[];
+    chunks: Chunk[];
+}
+
+function computeLineDiff(left: string, right: string): DiffResult {
     const dmp = new diff_match_patch();
-    const diffs: Diff[] = dmp.diff_main(left, right);
-    dmp.diff_cleanupSemantic(diffs);
+    const a = dmp.diff_linesToChars_(left, right);
+    const diffs = dmp.diff_main(a.chars1, a.chars2, false);
+    dmp.diff_charsToLines_(diffs, a.lineArray);
 
-    const leftLines: LineInfo[] = [];
-    const rightLines: LineInfo[] = [];
+    const leftLineCount = left === '' ? 1 : left.split('\n').length;
+    const rightLineCount = right === '' ? 1 : right.split('\n').length;
 
+    const leftMarks: LineMark[] = Array.from({ length: leftLineCount }, () => ({ type: 'equal', chunkId: null }));
+    const rightMarks: LineMark[] = Array.from({ length: rightLineCount }, () => ({ type: 'equal', chunkId: null }));
+    const chunks: Chunk[] = [];
+
+    let leftIdx = 0;
+    let rightIdx = 0;
     let chunkId = 0;
-    let leftBuf = '';
-    let rightBuf = '';
+    let pending: { leftStart: number; rightStart: number; hasRemoved: boolean; hasAdded: boolean } | null = null;
 
-    function flushEqual(text: string) {
-        const lines = text.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            if (i < lines.length - 1) {
-                leftBuf += lines[i];
-                rightBuf += lines[i];
-                leftLines.push({ text: leftBuf, type: 'equal', chunkId: null });
-                rightLines.push({ text: rightBuf, type: 'equal', chunkId: null });
-                leftBuf = '';
-                rightBuf = '';
-            } else {
-                leftBuf += lines[i];
-                rightBuf += lines[i];
-            }
-        }
+    function linesIn(text: string): number {
+        if (text === '') return 0;
+        const trimmed = text.endsWith('\n') ? text.slice(0, -1) : text;
+        return trimmed.split('\n').length;
     }
 
-    function flushChanged() {
-        const removedText = leftBuf;
-        const addedText = rightBuf;
-        leftBuf = '';
-        rightBuf = '';
-
-        if (!removedText && !addedText) return;
-
-        const removedLines = removedText.split('\n');
-        const addedLines = addedText.split('\n');
-
-        const maxLen = Math.max(removedLines.length, addedLines.length);
-        const id = chunkId++;
-
-        for (let i = 0; i < maxLen; i++) {
-            if (i < removedLines.length) {
-                leftLines.push({ text: removedLines[i], type: 'removed', chunkId: id });
-            } else {
-                leftLines.push({ text: '', type: 'empty', chunkId: null });
+    function flushPending() {
+        if (!pending) return;
+        if (pending.hasRemoved || pending.hasAdded) {
+            chunks.push({
+                id: chunkId,
+                leftStart: pending.leftStart,
+                leftEnd: leftIdx,
+                rightStart: pending.rightStart,
+                rightEnd: rightIdx,
+            });
+            for (let i = pending.leftStart; i < leftIdx; i++) {
+                leftMarks[i] = { type: 'removed', chunkId };
             }
-            if (i < addedLines.length) {
-                rightLines.push({ text: addedLines[i], type: 'added', chunkId: id });
-            } else {
-                rightLines.push({ text: '', type: 'empty', chunkId: null });
+            for (let i = pending.rightStart; i < rightIdx; i++) {
+                rightMarks[i] = { type: 'added', chunkId };
             }
+            chunkId++;
         }
+        pending = null;
     }
-
-    let prevWasChange = false;
 
     for (const [op, text] of diffs) {
+        const count = linesIn(text);
         if (op === DIFF_EQUAL) {
-            if (prevWasChange) {
-                flushChanged();
-            }
-            prevWasChange = false;
-            flushEqual(text);
+            flushPending();
+            leftIdx += count;
+            rightIdx += count;
         } else {
-            if (!prevWasChange && (leftBuf || rightBuf)) {
-                flushChanged();
-            }
-            prevWasChange = true;
+            if (!pending) pending = { leftStart: leftIdx, rightStart: rightIdx, hasRemoved: false, hasAdded: false };
             if (op === DIFF_DELETE) {
-                leftBuf += text;
-            } else {
-                rightBuf += text;
+                pending.hasRemoved = true;
+                leftIdx += count;
+            } else if (op === DIFF_INSERT) {
+                pending.hasAdded = true;
+                rightIdx += count;
             }
         }
     }
+    flushPending();
 
-    if (leftBuf || rightBuf) {
-        flushChanged();
-    }
+    return { leftMarks, rightMarks, chunks };
+}
 
-    return { leftLines, rightLines };
+function spliceLines(text: string, start: number, deleteCount: number, insert: string): string {
+    const lines = text.split('\n');
+    const insertLines = insert === '' ? [] : insert.split('\n');
+    lines.splice(start, deleteCount, ...insertLines);
+    return lines.join('\n');
+}
+
+function getChunkLines(text: string, start: number, end: number): string {
+    if (start >= end) return '';
+    const lines = text.split('\n');
+    return lines.slice(start, end).join('\n');
 }
 
 export default function DiffChecker() {
-    const [leftText, setLeftText] = useState(() =>
-        typeof window !== 'undefined' ? (localStorage.getItem('diff-checker-left') ?? '') : ''
-    );
-    const [rightText, setRightText] = useState(() =>
-        typeof window !== 'undefined' ? (localStorage.getItem('diff-checker-right') ?? '') : ''
-    );
-    const [leftLines, setLeftLines] = useState<LineInfo[]>([]);
-    const [rightLines, setRightLines] = useState<LineInfo[]>([]);
+    const [leftText, setLeftText] = useState('');
+    const [rightText, setRightText] = useState('');
+    const [diff, setDiff] = useState<DiffResult>({ leftMarks: [], rightMarks: [], chunks: [] });
     const [syncScrollEnabled, setSyncScrollEnabled] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
+    const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const leftRef = useRef<HTMLTextAreaElement>(null);
     const rightRef = useRef<HTMLTextAreaElement>(null);
     const leftGutterRef = useRef<HTMLDivElement>(null);
     const rightGutterRef = useRef<HTMLDivElement>(null);
     const leftOverlayRef = useRef<HTMLDivElement>(null);
     const rightOverlayRef = useRef<HTMLDivElement>(null);
+    const leftBtnLayerRef = useRef<HTMLDivElement>(null);
+    const rightBtnLayerRef = useRef<HTMLDivElement>(null);
     const diffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSyncingRef = useRef(false);
     const syncScrollEnabledRef = useRef(false);
-
-    useEffect(() => { localStorage.setItem('diff-checker-left', leftText); }, [leftText]);
-    useEffect(() => { localStorage.setItem('diff-checker-right', rightText); }, [rightText]);
 
     useEffect(() => {
         syncScrollEnabledRef.current = syncScrollEnabled;
     }, [syncScrollEnabled]);
 
     useEffect(() => {
+        Promise.all([
+            getSettingAction('diff_left'),
+            getSettingAction('diff_right'),
+            getSettingAction('diff_sync_scroll'),
+        ]).then(([l, r, s]) => {
+            if (l) setLeftText(l);
+            if (r) setRightText(r);
+            if (s === '1') setSyncScrollEnabled(true);
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
         if (diffTimerRef.current) clearTimeout(diffTimerRef.current);
         diffTimerRef.current = setTimeout(() => {
-            const result = computeLineDiff(leftText, rightText);
-            setLeftLines(result.leftLines);
-            setRightLines(result.rightLines);
+            setDiff(computeLineDiff(leftText, rightText));
         }, 300);
         return () => {
             if (diffTimerRef.current) clearTimeout(diffTimerRef.current);
         };
     }, [leftText, rightText]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = setTimeout(() => {
+            setSettingAction('diff_left', leftText);
+            setSettingAction('diff_right', rightText);
+        }, 400);
+        return () => {
+            if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+        };
+    }, [leftText, rightText, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('diff_sync_scroll', syncScrollEnabled ? '1' : '0');
+    }, [syncScrollEnabled, loaded]);
 
     const syncScroll = useCallback((source: 'left' | 'right') => {
         if (isSyncingRef.current) return;
@@ -144,21 +176,27 @@ export default function DiffChecker() {
         const sourceEl = source === 'left' ? leftRef.current : rightRef.current;
         const sourceGutter = source === 'left' ? leftGutterRef.current : rightGutterRef.current;
         const sourceOverlay = source === 'left' ? leftOverlayRef.current : rightOverlayRef.current;
+        const sourceBtnLayer = source === 'left' ? leftBtnLayerRef.current : rightBtnLayerRef.current;
+        const srcTop = sourceEl?.scrollTop ?? 0;
 
-        if (sourceGutter) sourceGutter.scrollTop = sourceEl?.scrollTop ?? 0;
-        if (sourceOverlay) sourceOverlay.scrollTop = sourceEl?.scrollTop ?? 0;
+        if (sourceGutter) sourceGutter.scrollTop = srcTop;
+        if (sourceOverlay) sourceOverlay.scrollTop = srcTop;
+        if (sourceBtnLayer) sourceBtnLayer.style.transform = `translateY(${-srcTop}px)`;
 
         if (syncScrollEnabledRef.current) {
             const targetEl = source === 'left' ? rightRef.current : leftRef.current;
             const targetGutter = source === 'left' ? rightGutterRef.current : leftGutterRef.current;
             const targetOverlay = source === 'left' ? rightOverlayRef.current : leftOverlayRef.current;
+            const targetBtnLayer = source === 'left' ? rightBtnLayerRef.current : leftBtnLayerRef.current;
 
-            if (sourceEl && targetEl) {
-                targetEl.scrollTop = sourceEl.scrollTop;
-                targetEl.scrollLeft = sourceEl.scrollLeft;
+            if (targetEl) {
+                targetEl.scrollTop = srcTop;
+                targetEl.scrollLeft = sourceEl?.scrollLeft ?? 0;
+                const tgtTop = targetEl.scrollTop;
+                if (targetGutter) targetGutter.scrollTop = tgtTop;
+                if (targetOverlay) targetOverlay.scrollTop = tgtTop;
+                if (targetBtnLayer) targetBtnLayer.style.transform = `translateY(${-tgtTop}px)`;
             }
-            if (targetGutter) targetGutter.scrollTop = sourceEl?.scrollTop ?? 0;
-            if (targetOverlay) targetOverlay.scrollTop = sourceEl?.scrollTop ?? 0;
         }
 
         requestAnimationFrame(() => {
@@ -167,37 +205,19 @@ export default function DiffChecker() {
     }, []);
 
     function mergeToRight(chunkId: number) {
-        const removed = leftLines
-            .filter((l) => l.chunkId === chunkId && l.type === 'removed')
-            .map((l) => l.text)
-            .join('\n');
-
-        const added = rightLines
-            .filter((l) => l.chunkId === chunkId && l.type === 'added')
-            .map((l) => l.text)
-            .join('\n');
-
-        setRightText((prev) => {
-            if (!added) return prev + (prev ? '\n' : '') + removed;
-            return prev.replace(added, removed);
-        });
+        const chunk = diff.chunks.find((c) => c.id === chunkId);
+        if (!chunk) return;
+        const removed = getChunkLines(leftText, chunk.leftStart, chunk.leftEnd);
+        const deleteCount = chunk.rightEnd - chunk.rightStart;
+        setRightText((prev) => spliceLines(prev, chunk.rightStart, deleteCount, removed));
     }
 
     function mergeToLeft(chunkId: number) {
-        const added = rightLines
-            .filter((l) => l.chunkId === chunkId && l.type === 'added')
-            .map((l) => l.text)
-            .join('\n');
-
-        const removed = leftLines
-            .filter((l) => l.chunkId === chunkId && l.type === 'removed')
-            .map((l) => l.text)
-            .join('\n');
-
-        setLeftText((prev) => {
-            if (!removed) return prev + (prev ? '\n' : '') + added;
-            return prev.replace(removed, added);
-        });
+        const chunk = diff.chunks.find((c) => c.id === chunkId);
+        if (!chunk) return;
+        const added = getChunkLines(rightText, chunk.rightStart, chunk.rightEnd);
+        const deleteCount = chunk.leftEnd - chunk.leftStart;
+        setLeftText((prev) => spliceLines(prev, chunk.leftStart, deleteCount, added));
     }
 
     function handleClear() {
@@ -213,14 +233,37 @@ export default function DiffChecker() {
     const leftLineCount = leftText === '' ? 1 : leftText.split('\n').length;
     const rightLineCount = rightText === '' ? 1 : rightText.split('\n').length;
 
-    function getLineClass(type: LineInfo['type']) {
+    const stats = useMemo(() => {
+        let added = 0;
+        let removed = 0;
+        for (const c of diff.chunks) {
+            removed += c.leftEnd - c.leftStart;
+            added += c.rightEnd - c.rightStart;
+        }
+        return { added, removed };
+    }, [diff.chunks]);
+
+    function getLineClass(type: LineMark['type']) {
         if (type === 'removed') return styles.lineRemoved;
         if (type === 'added') return styles.lineAdded;
-        if (type === 'empty') return styles.lineEmpty;
         return '';
     }
 
-    const seenChunks = new Set<number>();
+    const leftChunkFirstLine = useMemo(() => {
+        const map = new Map<number, number>();
+        diff.leftMarks.forEach((m, i) => {
+            if (m.chunkId !== null && !map.has(m.chunkId)) map.set(m.chunkId, i);
+        });
+        return map;
+    }, [diff.leftMarks]);
+
+    const rightChunkFirstLine = useMemo(() => {
+        const map = new Map<number, number>();
+        diff.rightMarks.forEach((m, i) => {
+            if (m.chunkId !== null && !map.has(m.chunkId)) map.set(m.chunkId, i);
+        });
+        return map;
+    }, [diff.rightMarks]);
 
     return (
         <div className={styles.wrapper}>
@@ -258,28 +301,33 @@ export default function DiffChecker() {
                         </div>
                         <div className={styles.editorRelative}>
                             <div ref={leftOverlayRef} className={styles.overlay} aria-hidden="true">
-                                {leftLines.map((line, i) => {
-                                    let mergeBtn = null;
-                                    if (line.chunkId !== null && line.type === 'removed' && !seenChunks.has(line.chunkId)) {
-                                        seenChunks.add(line.chunkId);
-                                        const id = line.chunkId;
-                                        mergeBtn = (
+                                {Array.from({ length: leftLineCount }, (_, i) => {
+                                    const mark = diff.leftMarks[i] ?? { type: 'equal' as const, chunkId: null };
+                                    return (
+                                        <div key={i} className={`${styles.overlayLine} ${getLineClass(mark.type)}`} />
+                                    );
+                                })}
+                            </div>
+                            <div className={styles.buttonLayer}>
+                                <div ref={leftBtnLayerRef} className={styles.buttonLayerInner} style={{ height: `${12 + leftLineCount * 21}px` }}>
+                                    {Array.from({ length: leftLineCount }, (_, i) => {
+                                        const mark = diff.leftMarks[i] ?? { type: 'equal' as const, chunkId: null };
+                                        const showBtn = mark.chunkId !== null && leftChunkFirstLine.get(mark.chunkId) === i;
+                                        if (!showBtn) return null;
+                                        return (
                                             <button
-                                                key={`merge-r-${id}`}
+                                                key={i}
                                                 className={styles.mergeBtn}
-                                                onClick={() => mergeToRight(id)}
-                                                title="Copy to right"
+                                                style={{ top: `${12 + i * 21}px` }}
+                                                onClick={() => mergeToRight(mark.chunkId!)}
+                                                aria-label={`Copy chunk at line ${i + 1} to right`}
+                                                title="Copy chunk to right"
                                             >
                                                 →
                                             </button>
                                         );
-                                    }
-                                    return (
-                                        <div key={i} className={`${styles.overlayLine} ${getLineClass(line.type)}`}>
-                                            {mergeBtn}
-                                        </div>
-                                    );
-                                })}
+                                    })}
+                                </div>
                             </div>
                             <textarea
                                 ref={leftRef}
@@ -311,30 +359,33 @@ export default function DiffChecker() {
                         </div>
                         <div className={styles.editorRelative}>
                             <div ref={rightOverlayRef} className={styles.overlay} aria-hidden="true">
-                                {rightLines.map((line, i) => {
-                                    let mergeBtn = null;
-                                    if (line.chunkId !== null && line.type === 'added') {
-                                        const id = line.chunkId;
-                                        const isFirst = rightLines.findIndex((l) => l.chunkId === id && l.type === 'added') === i;
-                                        if (isFirst) {
-                                            mergeBtn = (
-                                                <button
-                                                    key={`merge-l-${id}`}
-                                                    className={styles.mergeBtn}
-                                                    onClick={() => mergeToLeft(id)}
-                                                    title="Copy to left"
-                                                >
-                                                    ←
-                                                </button>
-                                            );
-                                        }
-                                    }
+                                {Array.from({ length: rightLineCount }, (_, i) => {
+                                    const mark = diff.rightMarks[i] ?? { type: 'equal' as const, chunkId: null };
                                     return (
-                                        <div key={i} className={`${styles.overlayLine} ${getLineClass(line.type)}`}>
-                                            {mergeBtn}
-                                        </div>
+                                        <div key={i} className={`${styles.overlayLine} ${getLineClass(mark.type)}`} />
                                     );
                                 })}
+                            </div>
+                            <div className={styles.buttonLayer}>
+                                <div ref={rightBtnLayerRef} className={styles.buttonLayerInner} style={{ height: `${12 + rightLineCount * 21}px` }}>
+                                    {Array.from({ length: rightLineCount }, (_, i) => {
+                                        const mark = diff.rightMarks[i] ?? { type: 'equal' as const, chunkId: null };
+                                        const showBtn = mark.chunkId !== null && rightChunkFirstLine.get(mark.chunkId) === i;
+                                        if (!showBtn) return null;
+                                        return (
+                                            <button
+                                                key={i}
+                                                className={`${styles.mergeBtn} ${styles.mergeBtnLeft}`}
+                                                style={{ top: `${12 + i * 21}px` }}
+                                                onClick={() => mergeToLeft(mark.chunkId!)}
+                                                aria-label={`Copy chunk at line ${i + 1} to left`}
+                                                title="Copy chunk to left"
+                                            >
+                                                ←
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             <textarea
                                 ref={rightRef}
@@ -359,6 +410,8 @@ export default function DiffChecker() {
                 <span className={styles.statusItem}>Original: {leftLineCount} lines</span>
                 <span className={styles.statusDivider}>|</span>
                 <span className={styles.statusItem}>Modified: {rightLineCount} lines</span>
+                <span className={styles.statusDivider}>|</span>
+                <span className={styles.statusItem}>+{stats.added} −{stats.removed}</span>
             </div>
         </div>
     );

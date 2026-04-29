@@ -10,7 +10,7 @@ import type { ClipTab } from '@/lib/dal/clipboard';
 
 function makeTab(ord: number): ClipTab {
     return {
-        id: `t${ord}`,
+        id: crypto.randomUUID(),
         title: ord === 1 ? 'Untitled' : `Untitled ${ord}`,
         ord,
         createdAt: new Date().toISOString(),
@@ -146,7 +146,6 @@ export default function ClipboardEditor() {
     return (
         <div className={styles.wrapper}>
             <div className={styles.toolbar}>
-                <span className={styles.toolbarLabel}>clipboard</span>
                 <div className={styles.toolbarActions}>
                     <button
                         className={styles.actionBtn}

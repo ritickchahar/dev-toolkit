@@ -8,6 +8,7 @@ import vscDarkPlus from 'react-syntax-highlighter/dist/cjs/styles/prism/vsc-dark
 import vs from 'react-syntax-highlighter/dist/cjs/styles/prism/vs';
 import { useTheme } from './ThemeProvider';
 import ThemeSelector from './ThemeSelector';
+import { getSettingAction, setSettingAction } from '@/app/actions/settings';
 import styles from './MarkdownPreview.module.css';
 
 
@@ -31,11 +32,41 @@ export default function MarkdownPreview() {
     const [copiedMd, setCopiedMd] = useState(false);
     const [copiedHtml, setCopiedHtml] = useState(false);
     const [lineCount, setLineCount] = useState(1);
+    const [loaded, setLoaded] = useState(false);
 
     const editorRef = useRef<HTMLTextAreaElement>(null);
     const gutterRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const persistRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        Promise.all([
+            getSettingAction('md_content'),
+            getSettingAction('md_fullscreen'),
+        ]).then(([md, fs]) => {
+            if (md) {
+                setMarkdown(md);
+                setLineCount(md.split('\n').length);
+            }
+            if (fs === '1') setFullscreen(true);
+            setLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        if (persistRef.current) clearTimeout(persistRef.current);
+        persistRef.current = setTimeout(() => {
+            setSettingAction('md_content', markdown);
+        }, 400);
+        return () => { if (persistRef.current) clearTimeout(persistRef.current); };
+    }, [markdown, loaded]);
+
+    useEffect(() => {
+        if (!loaded) return;
+        setSettingAction('md_fullscreen', fullscreen ? '1' : '0');
+    }, [fullscreen, loaded]);
 
     useEffect(() => { localStorage.setItem('markdown-preview-input', markdown); }, [markdown]);
 
